@@ -878,11 +878,12 @@ def main():
 
     elif args.command == "plans":
         from .client import YNABClient
-        from .config import require_credentials
+        from .config import require_token
         from .payees.audit import cmd_plans
 
-        token, plan_id = require_credentials()
-        client = YNABClient(token, plan_id)
+        # Only the token is needed: /plans is a root endpoint, and this is the
+        # command that tells you what your plan ID is.
+        client = YNABClient(require_token(), "")
         cmd_plans(client)
 
     elif args.command == "month-end":
@@ -995,18 +996,19 @@ def _dispatch_payee(args):
     if cmd == "plans":
         print("ynab payee plans is deprecated. Use: ynab plans", file=sys.stderr)
 
+        from .client import YNABClient
+        from .config import require_token
+        from .payees.audit import cmd_plans
+
+        cmd_plans(YNABClient(require_token(), ""))
+        return
+
     # Commands that need client
     from .client import YNABClient
     from .config import require_credentials
 
     token, plan_id = require_credentials()
     client = YNABClient(token, plan_id)
-
-    if cmd == "plans":
-        from .payees.audit import cmd_plans
-
-        cmd_plans(client)
-        return
 
     if cmd == "create":
         name = args.name
@@ -1216,12 +1218,17 @@ def _cmd_configure():
         plan_id = _fetch_1password(op_item, "plan_id", "Budget/plan ID")
     else:
         access_token = getpass.getpass("Personal access token: ").strip()
-        print("(Run 'ynab plans' after setup to find your plan ID)")
-        plan_id = input("Budget/plan ID (UUID): ").strip()
+        plan_id = ""
 
     if not access_token:
         print("\nError: access token is required.", file=sys.stderr)
         sys.exit(1)
+
+    # No plan ID yet (manual entry, or the 1Password item had no plan_id
+    # field): look the plans up with the token we just collected rather than
+    # sending the user off to another command.
+    if not plan_id:
+        plan_id = _prompt_plan_id(access_token)
 
     # Patch only credential fields; preserve all other existing config
     CONFIG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -1244,6 +1251,42 @@ def _cmd_configure():
         print("Run 'ynab plans' to find your plan ID, then re-run configure.")
     else:
         print("Run 'ynab sync --status' to verify connectivity.\n")
+
+
+def _prompt_plan_id(access_token: str) -> str:
+    """Ask YNAB which plans this token can see and let the user pick one.
+
+    Falls back to a manual UUID prompt if the lookup fails (bad token, no
+    network) so configure is never a dead end.
+    """
+    from .client import YNABClient
+
+    print("\nLooking up your YNAB plans...")
+    try:
+        plans = YNABClient(access_token, "").get_plans()
+    except Exception as e:  # network error, 401 on a bad token, malformed response
+        print(f"Could not list plans: {e}")
+        print("Enter the plan ID manually, or leave blank and re-run 'ynab configure' later.")
+        return input("Budget/plan ID (UUID): ").strip()
+
+    if not plans:
+        print("No plans found for this token.")
+        return input("Budget/plan ID (UUID): ").strip()
+
+    if len(plans) == 1:
+        only = plans[0]
+        print(f"Found one plan: {only['name']}")
+        return only["id"]
+
+    print()
+    for i, p in enumerate(plans, 1):
+        print(f"  {i}. {p['name']}")
+        print(f"     {p['id']}")
+    choice = input(f"\nPlan [1-{len(plans)}, default 1]: ").strip() or "1"
+    if choice.isdigit() and 1 <= int(choice) <= len(plans):
+        return plans[int(choice) - 1]["id"]
+    print("Not a listed choice - enter the plan ID manually.")
+    return input("Budget/plan ID (UUID): ").strip()
 
 
 def _fetch_1password(default_item: str, default_field: str, label: str) -> str:

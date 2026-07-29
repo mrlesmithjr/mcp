@@ -10,6 +10,11 @@ uv tool install ".[dashboard]"
 
 ## Background / Autostart
 
+The dashboard is **opt-in and never starts on its own**. Installing ynab-tools -- by
+`uv tool install`, or as a Claude/Codex plugin -- puts the `ynab-dashboard` binary on
+PATH and stops there. Nothing listens on a port until you run `ynab dashboard install`,
+and `ynab dashboard uninstall` is final: no plugin update or venv rebuild brings it back.
+
 ### macOS (LaunchAgent)
 
 `ynab dashboard install` is **macOS-only**. It registers a LaunchAgent that starts the dashboard on login and restarts it on crash.

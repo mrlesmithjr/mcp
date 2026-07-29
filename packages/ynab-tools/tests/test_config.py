@@ -202,6 +202,83 @@ class TestCredentials:
         assert plan_id == "plan-1"
 
 
+class TestRequireToken:
+    """`ynab plans` is how a user discovers their plan ID, so the token-only
+    check must not demand one."""
+
+    def test_returns_token_without_plan_id(self):
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ["YNAB_ACCESS_TOKEN"] = "tok"
+            import ynab_tools.config as config
+
+            with patch.object(config, "load_env"):
+                assert config.require_token() == "tok"
+
+    def test_exits_without_token(self):
+        with patch.dict(os.environ, {}, clear=True):
+            import ynab_tools.config as config
+
+            with patch.object(config, "load_env"), pytest.raises(SystemExit) as exc:
+                config.require_token()
+            assert exc.value.code == 1
+
+
+class TestPromptPlanId:
+    """`ynab configure` resolves the plan ID itself instead of pointing at
+    another command that used to need one."""
+
+    def _patch_plans(self, plans=None, error=None):
+        client = patch("ynab_tools.client.YNABClient")
+        mock_cls = client.start()
+        if error is not None:
+            mock_cls.return_value.get_plans.side_effect = error
+        else:
+            mock_cls.return_value.get_plans.return_value = plans
+        return client
+
+    def test_single_plan_is_auto_selected(self, capsys):
+        from ynab_tools.cli import _prompt_plan_id
+
+        p = self._patch_plans([{"id": "plan-1", "name": "Our Budget"}])
+        try:
+            assert _prompt_plan_id("tok") == "plan-1"
+        finally:
+            p.stop()
+        assert "Our Budget" in capsys.readouterr().out
+
+    def test_user_picks_from_multiple_plans(self):
+        from ynab_tools.cli import _prompt_plan_id
+
+        p = self._patch_plans([{"id": "plan-1", "name": "A"}, {"id": "plan-2", "name": "B"}])
+        try:
+            with patch("builtins.input", return_value="2"):
+                assert _prompt_plan_id("tok") == "plan-2"
+        finally:
+            p.stop()
+
+    def test_blank_choice_defaults_to_first(self):
+        from ynab_tools.cli import _prompt_plan_id
+
+        p = self._patch_plans([{"id": "plan-1", "name": "A"}, {"id": "plan-2", "name": "B"}])
+        try:
+            with patch("builtins.input", return_value=""):
+                assert _prompt_plan_id("tok") == "plan-1"
+        finally:
+            p.stop()
+
+    def test_lookup_failure_falls_back_to_manual_entry(self, capsys):
+        """A bad token or no network must not dead-end configure."""
+        from ynab_tools.cli import _prompt_plan_id
+
+        p = self._patch_plans(error=RuntimeError("401 Unauthorized"))
+        try:
+            with patch("builtins.input", return_value="typed-uuid"):
+                assert _prompt_plan_id("tok") == "typed-uuid"
+        finally:
+            p.stop()
+        assert "Could not list plans" in capsys.readouterr().out
+
+
 class TestConfigureShow:
     """Tests for _cmd_configure_show token masking (issue #106).
 

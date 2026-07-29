@@ -79,7 +79,9 @@ ynab configure --reset bonus_funded_groups   # remove one optional setting
 ynab configure --reset                       # interactive: pick a setting to clear
 ```
 
-After entering your access token, retrieve your plan ID:
+After you enter your access token, the wizard looks up the plans that token can see and asks you to pick one, so there is normally nothing else to do. If the lookup fails (bad token, no network) it falls back to asking for the UUID directly.
+
+You can list plans yourself at any time - this needs only the access token, not a plan ID:
 
 ```bash
 ynab plans

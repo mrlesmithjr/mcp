@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Changed
+
+- **Dashboard is now opt-in.** The plugin no longer ships or installs a
+  `com.ynab-tools.dashboard` LaunchAgent, so installing ynab-tools no longer
+  starts a web service on `127.0.0.1:8000`. `ynab dashboard install` is the only
+  thing that starts it, and is unchanged. The `dashboard` extra is still installed
+  into the plugin venv, so opting in stays a single command with no rebuild.
+
+### Fixed
+
+- **`ynab plans` no longer requires a plan ID.** It is the command that tells
+  you what your plan ID is, and `ynab configure` points at it -- but it demanded
+  both `YNAB_ACCESS_TOKEN` and `YNAB_PLAN_ID`, so a first-time setup hit a
+  chicken-and-egg dead end. `/plans` is a root endpoint, so the token alone is
+  now enough (same for the deprecated `ynab payee plans`). `ynab configure` also
+  does the lookup itself now: enter your token and it lists the plans that token
+  can see and asks you to pick one, falling back to a manual UUID prompt if the
+  lookup fails.
+
+- **`ynab dashboard uninstall` no longer gets silently reverted.** The plugin hook
+  and `ynab dashboard install/uninstall` both owned the same LaunchAgent label,
+  and the hook unconditionally `launchctl load -w`s on every venv rebuild. An
+  uninstalled dashboard therefore came back -- running the plugin-venv binary from
+  a plist the CLI had not written -- on the next plugin update. The CLI is now the
+  sole owner of that plist.
+
+  Existing installs: a dashboard already loaded keeps running after this update.
+  Run `ynab dashboard uninstall` once to stop it for good.
+
 ## [1.0.370] - 2026-06-20
 
 ### Added

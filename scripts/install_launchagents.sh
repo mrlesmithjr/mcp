@@ -53,16 +53,17 @@ install_scripts lawnops lawnops
 # or its venv has not built. The agent loads but its first run will no-op.
 for vb in \
   "$HOME/.claude/plugins/data/homeops-mrlesmithjr-mcp/venv/bin/homeops" \
-  "$HOME/.claude/plugins/data/lawnops-mrlesmithjr-mcp/venv/bin/lawnops" \
-  "$HOME/.claude/plugins/data/ynab-tools-mrlesmithjr-mcp/venv/bin/ynab-dashboard"; do
+  "$HOME/.claude/plugins/data/lawnops-mrlesmithjr-mcp/venv/bin/lawnops"; do
   [[ -x "$vb" ]] || echo "WARN: missing $vb (install the plugin and let its venv build first)"
 done
 
+# ynab-tools is deliberately absent: the dashboard is a persistent user-facing
+# service, not a scheduled job, so it is opt-in via `ynab dashboard install`
+# rather than installed by the plugin. See packages/ynab-tools/docs/dashboard.md.
 for plist in \
   "$REPO_ROOT"/packages/homeops/launchagents/*.plist \
-  "$REPO_ROOT"/packages/lawnops/launchagents/*.plist \
-  "$REPO_ROOT"/packages/ynab-tools/launchagents/*.plist; do
+  "$REPO_ROOT"/packages/lawnops/launchagents/*.plist; do
   render_and_load "$plist"
 done
 
-echo "Loaded $(launchctl list | grep -cE 'com\.(homeops|lawnops|ynab-tools)\.') personal agents."
+echo "Loaded $(launchctl list | grep -cE 'com\.(homeops|lawnops)\.') personal agents."
