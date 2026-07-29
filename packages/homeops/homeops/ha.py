@@ -88,6 +88,37 @@ STANDALONE_SENSOR_ENTITIES = {
 }
 
 
+class PrometheusUnreachable(RuntimeError):
+    """Prometheus could not be reached, with the URL that was actually tried.
+
+    Only the HVAC tools need Prometheus; the other 24 homeops tools are pure
+    SQLite and keep working. The message says so, because a connection error is
+    otherwise easy to read as homeops being broken.
+    """
+
+    def __init__(self, url):
+        # Deferred like _prometheus_url does, to keep config.py's import of this
+        # module from becoming a cycle.
+        from homeops.config import DEFAULT_PROMETHEUS_URL
+
+        self.url = url
+        default = url == DEFAULT_PROMETHEUS_URL
+        hint = (
+            "prometheus_url is not set, so this fell back to the default. "
+            "Only use localhost if Prometheus runs on this machine; otherwise "
+            "point it at the host that scrapes your Home Assistant."
+            if default
+            else "Check that Prometheus is running and reachable at that URL."
+        )
+        super().__init__(
+            f"Prometheus unreachable at {url}. {hint} "
+            "Set it with `homeops configure`, the prometheus_url key in "
+            "~/.config/homeops/config.json, or the PROMETHEUS_URL environment "
+            "variable. Only the hvac_* tools need Prometheus; every other "
+            "homeops tool is unaffected."
+        )
+
+
 def _prometheus_url():
     """Load the Prometheus base URL from config.
 
@@ -129,6 +160,17 @@ def _prom_get(path, params):
             if body.get("status") != "success":
                 raise RuntimeError(f"Prometheus query failed: {body.get('error', 'unknown error')}")
             return body["data"]
+        except requests.exceptions.ConnectionError as e:
+            attempt += 1
+            if attempt > MAX_RETRIES:
+                # A bare ConnectionError reads like a Prometheus outage. Far more
+                # often prometheus_url is simply unset, so it fell back to the
+                # localhost default while Prometheus runs on another host. Say
+                # which URL was tried and how to change it, since the raw
+                # HTTPConnectionPool text names a host the user never chose.
+                raise PrometheusUnreachable(_prometheus_url()) from e
+            logger.warning("Prometheus request to %s failed (attempt %d/%d): %s", path, attempt, MAX_RETRIES, e)
+            time.sleep(RETRY_BACKOFF_SECONDS * attempt)
         except requests.exceptions.RequestException as e:
             attempt += 1
             if attempt > MAX_RETRIES:
