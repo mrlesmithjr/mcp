@@ -6,7 +6,7 @@ import re
 import sqlite3
 
 from ..client import YNABClient
-from ..config import CATEGORY_DEFS_FILE, require_credentials
+from ..config import require_credentials, resolve_category_defs_file
 from ..db import get_connection, init_db
 
 logger = logging.getLogger(__name__)
@@ -23,12 +23,17 @@ MIN_SPLIT_PROPORTION = 0.05
 
 
 def load_category_definitions() -> dict:
-    """Load category definitions from JSON."""
-    if not CATEGORY_DEFS_FILE.exists():
-        logger.error("Category definitions not found: %s", CATEGORY_DEFS_FILE)
+    """Load category definitions from JSON.
+
+    Prefers the user's own category_definitions.json and falls back to the
+    shipped .example.json template - see config.resolve_category_defs_file().
+    """
+    path = resolve_category_defs_file()
+    if not path.exists():
+        logger.error("Category definitions not found: %s", path)
         return {}
     try:
-        with open(CATEGORY_DEFS_FILE) as f:
+        with open(path) as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         logger.error("Failed to load category definitions: %s", e)

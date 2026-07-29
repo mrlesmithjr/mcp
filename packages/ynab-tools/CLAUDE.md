@@ -259,7 +259,7 @@ ynab dashboard start --sync-interval 60  # Auto-sync every 60 minutes
 | File | Purpose |
 |------|---------|
 | `ynab_tools/data/payee_rules.json` | Regex-based import pattern → canonical payee/category mappings |
-| `ynab_tools/data/category_definitions.json` | Category definitions with keywords, typical payees, and disambiguation rules for multi-category stores |
+| `ynab_tools/data/category_definitions.example.json` | Template of category definitions: keywords, typical payees, and disambiguation rules for multi-category stores. Copy to `category_definitions.json` and fill in your own payees - that copy is gitignored, since the merchants you list record where you actually shop |
 | `ynab_tools/data/queries.sql` | Ad-hoc SQL reference queries |
 
 ## Important Patterns

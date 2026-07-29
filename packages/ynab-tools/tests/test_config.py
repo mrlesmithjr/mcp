@@ -6,7 +6,14 @@ from unittest.mock import patch
 
 import pytest
 
-from ynab_tools.config import CATEGORY_DEFS_FILE, DATA_DIR, RULES_FILE, atomic_write_json
+from ynab_tools import config
+from ynab_tools.config import (
+    CATEGORY_DEFS_EXAMPLE_FILE,
+    CATEGORY_DEFS_FILE,
+    DATA_DIR,
+    RULES_FILE,
+    atomic_write_json,
+)
 
 
 class TestPaths:
@@ -20,6 +27,29 @@ class TestPaths:
     def test_category_defs_path(self):
         assert CATEGORY_DEFS_FILE.name == "category_definitions.json"
         assert CATEGORY_DEFS_FILE.parent == DATA_DIR
+
+    def test_category_defs_example_ships(self):
+        """Only the template is packaged; the user copy is gitignored."""
+        assert CATEGORY_DEFS_EXAMPLE_FILE.name == "category_definitions.example.json"
+        assert CATEGORY_DEFS_EXAMPLE_FILE.exists()
+
+    def test_resolve_prefers_user_copy_then_example(self, tmp_path, monkeypatch):
+        user = tmp_path / "category_definitions.json"
+        monkeypatch.setattr(config, "CATEGORY_DEFS_FILE", user)
+        monkeypatch.setattr(config, "CATEGORY_DEFS_EXAMPLE_FILE", tmp_path / "example.json")
+
+        assert config.resolve_category_defs_file().name == "example.json"
+        user.write_text("{}")
+        assert config.resolve_category_defs_file() == user
+
+    def test_shipped_example_is_valid_and_carries_no_real_payees(self):
+        """The template must parse and must not reappear as a spending profile."""
+        data = json.loads(CATEGORY_DEFS_EXAMPLE_FILE.read_text())
+        assert data["categories"] and data["split_payees"]
+        payees = {p for c in data["categories"].values() for p in c.get("typical_payees", [])}
+        # Merchants dropped from the template because they identify a person's
+        # insurer, region, or lifestyle rather than illustrating the format.
+        assert not payees & {"State Farm", "RaceTrac", "QT", "Lowes Foods", "Ancestry.com"}
 
 
 class TestAtomicWriteJson:

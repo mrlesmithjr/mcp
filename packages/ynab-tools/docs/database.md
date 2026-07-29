@@ -173,7 +173,7 @@ Regex rules mapping messy bank import names to clean canonical payee names and c
 5. Run `ynab payee preview` to verify matches
 6. Run `ynab payee fix` to apply
 
-### `ynab_tools/data/category_definitions.json`
+### `ynab_tools/data/category_definitions.json` (user copy; template: `category_definitions.example.json`)
 
 Defines what each budget category covers: keywords, typical payees, and disambiguation rules for multi-category stores. Used by `ynab categorize`.
 

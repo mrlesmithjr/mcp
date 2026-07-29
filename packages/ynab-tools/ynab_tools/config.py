@@ -29,6 +29,22 @@ _PROJECT_ROOT = _PACKAGE_DIR.parent
 DATA_DIR = _PACKAGE_DIR / "data"
 RULES_FILE = DATA_DIR / "payee_rules.json"
 CATEGORY_DEFS_FILE = DATA_DIR / "category_definitions.json"
+CATEGORY_DEFS_EXAMPLE_FILE = DATA_DIR / "category_definitions.example.json"
+
+
+def resolve_category_defs_file() -> Path:
+    """Return the category-definitions file to read, user copy first.
+
+    category_definitions.json describes which merchants belong in which
+    category, so a populated one is a record of where its owner actually
+    shops - it is user data, not shipped content, and is gitignored for the
+    same reason payee_rules.json and category_classification.json are. Only
+    the .example.json template ships; a user copies it and fills in their own
+    payees. Falling back to the template keeps a fresh install working out of
+    the box instead of failing on a missing file.
+    """
+    return CATEGORY_DEFS_FILE if CATEGORY_DEFS_FILE.exists() else CATEGORY_DEFS_EXAMPLE_FILE
+
 
 # Config file location
 CONFIG_DIR = Path.home() / ".config" / "ynab-tools"
