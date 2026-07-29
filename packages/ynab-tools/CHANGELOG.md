@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Security
+
+- **Patched the last four transitive dashboard-frontend advisories** — `js-yaml`
+  to 4.3.0 (high: quadratic-complexity DoS via merge keys), `@hono/node-server`
+  to 2.0.12 (moderate: path traversal in `serve-static`), and `@babel/core` to
+  7.29.7 (low: arbitrary file read via `sourceMappingURL`). `npm audit` now
+  reports zero vulnerabilities. Non-breaking: only `package-lock.json` changed,
+  no direct dependency moved. Scope note — all three are build-time tooling or a
+  server adapter this FastAPI-backed dashboard does not run at runtime, so the
+  previously shipped bundle was not itself exploitable; this clears the alerts
+  and the toolchain rather than closing a live hole. The bundle was rebuilt to
+  verify the toolchain and is included.
+
 ### Fixed
 
 - **Claude Desktop setup docs were wrong and could not work as written.** Both

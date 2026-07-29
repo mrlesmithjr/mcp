@@ -1,0 +1,82 @@
+# Dependabot configuration.
+#
+# IMPORTANT -- what this file does and does not control:
+#
+# `target-branch: develop` routes *version updates* into the develop branch, so
+# dependency bumps go through the same CI-gated develop -> main PR every other
+# change uses, instead of landing on the live marketplace branch directly.
+#
+# It does NOT move *security updates*. GitHub's docs are explicit that a config
+# block carrying a target-branch is not used for security updates ("you should
+# not specify a target-branch"), so security PRs continue to be raised against
+# the default branch (main) with default settings. That is why the npm block
+# below is duplicated: the first entry (no target-branch) is the one security
+# updates use, and the second routes routine version bumps to develop.
+#
+# This file is only read from the DEFAULT branch (main). Editing it on develop
+# has no effect until it is released.
+version: 2
+
+updates:
+  # --- npm: ynab-tools dashboard frontend -------------------------------------
+  # No target-branch: this entry is what Dependabot security updates use, and
+  # its PRs target main. Every currently-open Dependabot PR in this repo is a
+  # security update for this directory.
+  - package-ecosystem: npm
+    directory: /packages/ynab-tools/ynab_tools/dashboard/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Routine (non-security) version bumps for the same directory, routed to
+  # develop so they pass through the release gate.
+  - package-ecosystem: npm
+    directory: /packages/ynab-tools/ynab_tools/dashboard/frontend
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      frontend-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # --- Python: the uv workspace ----------------------------------------------
+  # Root uv.lock is authoritative for every package (see CLAUDE.md), so one
+  # entry covers the whole workspace.
+  - package-ecosystem: uv
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
+    # mcp is deliberately pinned below 2.0 across all packages: 2.x removed
+    # mcp.server.fastmcp, which every server imports. Migrating is a tracked
+    # piece of work, not something to take as an automated bump.
+    ignore:
+      - dependency-name: mcp
+        update-types: [version-update:semver-major]
+
+  # --- GitHub Actions ---------------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
