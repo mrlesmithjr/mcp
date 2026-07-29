@@ -38,7 +38,10 @@ mcp/
 │   │       ├── install_deps.sh # GENERATED: SessionStart venv installer
 │   │       └── run_server.sh   # GENERATED: cold-start launcher
 │   ├── ynab-tools/             # mrlesmithjr-mcp-ynab-tools (same layout)
-│   │   └── launchagents/       # plist templates (__HOME__) + ops scripts, shipped in the plugin
+│   │                           # ships NO launchagents/: the dashboard is opt-in
+│   │                           # via `ynab dashboard install` (see below)
+│   ├── homeops/, lawnops/      # launchagents/: plist templates (__HOME__) + ops
+│   │                           # scripts, shipped in the plugin and auto-loaded
 │   ├── contacts-tools/         # mrlesmithjr-mcp-contacts-tools (Google People API; ContactsManager/PyObjC retained but unwired)
 │   ├── homeops-coordinator/    # daemon package; workspace member, NOT a plugin (no -mcp script)
 │   └── ...                     # 16 packages total; the 14 plugins share this layout
@@ -88,11 +91,20 @@ The SessionStart hook (`hooks/install_deps.sh`) runs on each session start. It:
    loaded with and a plist rewritten in place would otherwise keep running under
    the stale in-memory `ProgramArguments` (issue #151).
 
+   Only ship a plist here for an *unattended scheduled job* (homeops, lawnops,
+   obsidian-search-tools). A persistent user-facing service must not be
+   plugin-installed: this step runs `launchctl load -w` on every rebuild, so it
+   would silently resurrect a service the user had deliberately stopped. The
+   ynab dashboard is the worked example -- it is opt-in via
+   `ynab dashboard install`, which owns writing, loading, and removing its own
+   plist. Two owners of one label means uninstall does not stick.
+
 This self-install means a nuclear rebuild needs no monorepo clone: installing the
 plugins from the marketplace restores the venvs, the CLIs on PATH, and the
 LaunchAgents. `scripts/install_launchagents.sh` is a manual equivalent for the dev
 checkout. Runtime extras and CLI/LaunchAgent ownership are configured in the
-generator (`_RUNTIME_EXTRAS`, per-package `launchagents/`).
+generator (`_RUNTIME_EXTRAS`, per-package `launchagents/`). A `_RUNTIME_EXTRAS`
+entry only makes a feature available in the venv; it never starts anything.
 
 The machine-wide reset/rebuild/nuclear runbook is kept in the maintainer's
 private dotfiles repo (the provisioning authority), not in this repo.
@@ -116,6 +128,36 @@ Code's established manifest and launcher contract unchanged.
 plugin schema validator. Verified end to end on codex-cli 0.144.6: a live
 `codex exec` session against `weather-tools` and `ynab-tools` recorded a real
 `mcp_tool_call` for the installed server, no shell fallback (issue #133).
+
+### Which install path to use
+
+Three consumption paths, and they do not overlap. Picking the wrong one is the most
+common source of confusion, because two of them can silently fight over
+`~/.local/bin/<cli>`.
+
+| Situation | Path | How |
+|-----------|------|-----|
+| **This repo is checked out** (dev machine) | Workspace venv | `uv sync --all-packages`, then `uv run python dev/register_dev.py` to register `<tool>-dev` servers pointing at `.venv/bin/` |
+| **No checkout** (consumer machine) | Marketplace plugin | `/plugin marketplace add mrlesmithjr/mcp` + `/plugin install <slug>@mrlesmithjr-mcp`; the SessionStart hook self-bootstraps the venv, CLIs, and LaunchAgents |
+| **Claude Desktop** | Neither | Desktop has no plugin/marketplace support and does not read Claude Code's MCP config. Point `claude_desktop_config.json` at an absolute path to the `<tool>-mcp` binary |
+
+Do **not** install the marketplace plugin on a dev machine. `dev/register_dev.py`
+states the rule directly: marketplace plugins are consumer-only. A plugin install
+clones the package and builds its own venv, so you end up running a frozen copy of
+the code you are editing — and `install_deps.sh` unconditionally re-points
+`~/.local/bin/<cli>` at that venv on every run, silently taking the CLI away from the
+workspace build.
+
+Running `hooks/install_deps.sh` by hand from a checkout has the same effect: with no
+plugin runtime supplying `CLAUDE_PLUGIN_ROOT`/`CLAUDE_PLUGIN_DATA`, it falls back to
+`packages/<tool>` and `~/.local/share/<tool>`, producing a plugin-shaped venv with no
+plugin behind it. It also installs **unlocked** (`uv pip install ${PLUGIN_ROOT}`), so
+it can resolve dependency versions the workspace lockfile would never pick.
+
+For Claude Desktop specifics — absolute path requirement, credential handling,
+verifying with a raw MCP handshake, troubleshooting — see
+`packages/ynab-tools/docs/mcp-server.md`, which is the worked reference for any tool
+in this workspace.
 
 ---
 

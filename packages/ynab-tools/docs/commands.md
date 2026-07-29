@@ -27,7 +27,7 @@ Lists all YNAB plans (formerly called budgets) accessible with your API token, s
 ynab plans
 ```
 
-Requires YNAB API credentials. The configure wizard now references this command for plan discovery.
+Requires only `YNAB_ACCESS_TOKEN` - not a plan ID, since this is the command that tells you what your plan ID is. `ynab configure` also runs this lookup for you and lets you pick a plan from the list.
 
 > **Note:** `ynab payee plans` is deprecated. Use `ynab plans` instead.
 

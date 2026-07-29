@@ -233,6 +233,37 @@ def apply_config(file_config: dict) -> None:
             del os.environ[env_var]
 
 
+def require_token() -> str:
+    """Load env and return the access token, exiting if it is missing.
+
+    For the handful of operations that hit YNAB's root (non-plan-scoped)
+    endpoints - notably `ynab plans`, which is how a user *discovers* their
+    plan ID during setup. Requiring a plan ID there would be a chicken-and-egg
+    trap: `ynab configure` points at `ynab plans`, which would point back at
+    configure.
+    """
+    load_env()
+    token = os.environ.get("YNAB_ACCESS_TOKEN")
+    if not token:
+        print(
+            f"Error: YNAB_ACCESS_TOKEN is required.\n"
+            f"\n"
+            f"Run 'ynab configure' to set it up, or create {CONFIG_FILE}:\n"
+            f"  mkdir -p {CONFIG_DIR}\n"
+            f"  cat > {CONFIG_FILE} << 'EOF'\n"
+            f"  {{\n"
+            f'    "access_token": "your-ynab-personal-access-token"\n'
+            f"  }}\n"
+            f"  EOF\n"
+            f"\n"
+            f"Or set the environment variable:\n"
+            f"  export YNAB_ACCESS_TOKEN=your-token\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return token
+
+
 def require_credentials() -> tuple[str, str]:
     """Load env and return (token, plan_id), exiting on missing values."""
     load_env()
@@ -253,7 +284,8 @@ def require_credentials() -> tuple[str, str]:
             f"\n"
             f"Or set environment variables:\n"
             f"  export YNAB_ACCESS_TOKEN=your-token\n"
-            f"  export YNAB_PLAN_ID=your-budget-uuid\n",
+            f"  export YNAB_PLAN_ID=your-budget-uuid\n"
+            + ("\nRun 'ynab plans' to list your plan IDs.\n" if token else ""),
             file=sys.stderr,
         )
         sys.exit(1)

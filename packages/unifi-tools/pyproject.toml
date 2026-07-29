@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-unifi-tools"
-version = "0.1.26"
+version = "0.1.27"
 description = "UniFi network operations: device inventory, client monitoring, VLAN management, and security status"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
     "requests>=2.28.0",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
 ]
 
 [project.optional-dependencies]

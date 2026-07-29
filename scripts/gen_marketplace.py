@@ -471,8 +471,13 @@ def _mcp_json(server_name: str) -> dict:
 # Runtime extras to install into a tool's plugin venv beyond the base package.
 # These are non-MCP entry points that ship in the same venv (e.g. a daemon run by
 # a LaunchAgent). Dev/test extras are intentionally excluded.
+#
+# An extra here makes a feature *available*, not *running*. ynab-tools carries
+# [dashboard] so the ynab-dashboard binary exists in the venv and is on PATH,
+# but the plugin ships no dashboard LaunchAgent: starting it is opt-in via
+# `ynab dashboard install`, which owns that plist's whole lifecycle.
 _RUNTIME_EXTRAS = {
-    "ynab-tools": ["dashboard"],  # ynab-dashboard daemon (com.ynab-tools.dashboard)
+    "ynab-tools": ["dashboard"],  # makes `ynab dashboard install` work; starts nothing
 }
 
 

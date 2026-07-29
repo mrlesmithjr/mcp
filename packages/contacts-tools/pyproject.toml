@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-contacts-tools"
-version = "0.2.2"
+version = "0.2.3"
 description = "Contacts MCP server: read and write contacts via the Google People API"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.2",
     "pyobjc-framework-Contacts>=10.0",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "prompt-security-utils>=1.4.0",
 ]
 

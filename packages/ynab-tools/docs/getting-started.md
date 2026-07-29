@@ -79,7 +79,9 @@ ynab configure --reset bonus_funded_groups   # remove one optional setting
 ynab configure --reset                       # interactive: pick a setting to clear
 ```
 
-After entering your access token, retrieve your plan ID:
+After you enter your access token, the wizard looks up the plans that token can see and asks you to pick one, so there is normally nothing else to do. If the lookup fails (bad token, no network) it falls back to asking for the UUID directly.
+
+You can list plans yourself at any time - this needs only the access token, not a plan ID:
 
 ```bash
 ynab plans
@@ -130,17 +132,26 @@ claude mcp list
 
 You should see `ynab-tools` in the list.
 
-**Claude Desktop** - add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+**Claude Desktop** - merge into `~/Library/Application Support/Claude/claude_desktop_config.json`
+(the file already holds Desktop's own settings, so add the key rather than replacing it):
 
 ```json
 {
   "mcpServers": {
     "ynab-tools": {
-      "command": "ynab-mcp"
+      "command": "/absolute/path/to/ynab-mcp"
     }
   }
 }
 ```
+
+The path must be absolute — Desktop does not inherit your shell `PATH`, so a bare
+`ynab-mcp` silently fails to start. Get yours with `which ynab-mcp` (or
+`ls "$PWD/.venv/bin/ynab-mcp"` in a workspace checkout). Then quit Desktop fully with
+**⌘Q** and reopen; closing the window is not enough.
+
+No credentials go in this file — the server reads the `~/.config/ynab-tools/config.json`
+you wrote in Step 2. Full setup and troubleshooting: [mcp-server.md](mcp-server.md).
 
 ## Step 6: Verify with Claude
 

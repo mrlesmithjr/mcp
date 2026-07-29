@@ -43,17 +43,21 @@ Register with Claude Code:
 claude mcp add -s user obsidian-search-tools obsidian-search-tools-mcp
 ```
 
-Or add to Claude Desktop (`~/.claude/claude_desktop_config.json`):
+Or add to Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "obsidian-search-tools": {
-      "command": "obsidian-search-tools-mcp"
+      "command": "/absolute/path/to/obsidian-search-tools-mcp"
     }
   }
 }
 ```
+
+The path must be absolute — Claude Desktop does not inherit your shell `PATH`, so a
+bare command name fails to start with no useful error. Find yours with
+`which obsidian-search-tools-mcp`, then quit Desktop with **⌘Q** and reopen.
 
 **First use:** `vault_reindex` downloads the `BAAI/bge-small-en-v1.5` ONNX model (~130 MB) to `~/.cache/fastembed/` on first run. Subsequent calls use the cached model.
 

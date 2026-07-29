@@ -88,4 +88,12 @@ cd packages/weather-tools
 uv run --extra dev pytest tests/ -v
 ```
 
-13 integration tests covering both tools. Requires network access (calls live Open-Meteo API).
+15 integration tests covering both tools, plus annotation checks that need no network.
+
+The integration tests call the live Open-Meteo API, which is unauthenticated and
+rate-limits by source IP. They **skip** rather than fail when the API is unreachable,
+timing out, or rate-limiting -- otherwise a shared CI runner whose quota was spent by
+someone else turns every PR red and blocks the release gate. The skip is narrow: only
+transport errors, HTTP 429/5xx, and "limit exceeded" payloads. A genuine regression,
+including HTTP 4xx for a bad request, still fails. See `_require_live_api` in
+`tests/test_mcp_server.py`.

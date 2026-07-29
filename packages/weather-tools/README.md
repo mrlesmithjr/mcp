@@ -19,17 +19,21 @@ Register with Claude Code:
 claude mcp add -s user weather-tools -- weather-tools-mcp
 ```
 
-Or add to Claude Desktop (`~/.claude/claude_desktop_config.json`):
+Or add to Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "weather-tools": {
-      "command": "weather-tools-mcp"
+      "command": "/absolute/path/to/weather-tools-mcp"
     }
   }
 }
 ```
+
+The path must be absolute — Claude Desktop does not inherit your shell `PATH`, so a
+bare command name fails to start with no useful error. Find yours with
+`which weather-tools-mcp`, then quit Desktop with **⌘Q** and reopen.
 
 ### MCP Tools (2)
 

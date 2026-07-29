@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-sheets-tools"
-version = "0.2.2"
+version = "0.2.3"
 description = "Google Sheets MCP server: read and write spreadsheets via the Sheets API"
 readme = "README.md"
 license = "MIT"
@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.2",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "prompt-security-utils>=1.4.0",
 ]
 

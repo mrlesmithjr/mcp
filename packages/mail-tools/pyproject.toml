@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-mail-tools"
-version = "0.1.34"
+version = "0.1.35"
 description = "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
     "pyobjc-framework-ScriptingBridge>=10.0",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "prompt-security-utils>=1.4.0",
 ]
 

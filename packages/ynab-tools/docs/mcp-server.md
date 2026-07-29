@@ -16,21 +16,95 @@ This makes the server available in every Claude Code session. Restart Claude Cod
 
 ### Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Claude Desktop needs an **absolute path** to `ynab-mcp`, and it will not read your
+credentials from anywhere you have to set up separately. Both points are covered below.
+
+#### 1. Find the absolute path
+
+Desktop launches servers with a minimal environment and does **not** inherit your
+shell's `PATH`, so a bare `"command": "ynab-mcp"` fails to start with no useful error.
+Get the real path for however you installed:
+
+```bash
+# uv tool install (ynab-mcp is on PATH)
+which ynab-mcp
+
+# monorepo / workspace checkout
+ls "$PWD/.venv/bin/ynab-mcp"
+
+# installed as a Claude Code plugin
+ls ~/.local/share/ynab-tools/venv/bin/ynab-mcp
+```
+
+Note `ynab-mcp` is deliberately *not* symlinked into `~/.local/bin` by the plugin
+installer — only human-facing CLIs like `ynab` are. So for a plugin or workspace
+install there is no short name to fall back on; the absolute path is required.
+
+#### 2. Add the server
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`. The file
+already exists and holds Desktop's own settings, so **merge** this key in rather than
+replacing the file:
 
 ```json
 {
   "mcpServers": {
     "ynab-tools": {
-      "command": "ynab-mcp",
-      "env": {
-        "YNAB_ACCESS_TOKEN": "your-personal-access-token",
-        "YNAB_PLAN_ID": "your-budget-uuid"
-      }
+      "command": "/absolute/path/to/ynab-mcp"
     }
   }
 }
 ```
+
+No `env` block is needed. The server reads `~/.config/ynab-tools/config.json`, which
+`ynab configure` writes with mode 600. Putting `YNAB_ACCESS_TOKEN` in the Desktop
+config instead means a second copy of your token in a plaintext file that Desktop
+rewrites — prefer the config file. Env vars still take precedence if you need to
+override for a single client (see [configuration.md](configuration.md)).
+
+#### 3. Restart and verify
+
+Quit Desktop completely — **⌘Q, not just closing the window** — then reopen. The
+tools appear under the hammer icon. Ask it something concrete:
+
+```
+Check my budget status
+```
+
+To verify the server independently of Desktop, run the same handshake Desktop does,
+with an empty environment to prove the absolute path and config lookup both hold:
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"t","version":"0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+  | env -i HOME="$HOME" PATH=/usr/bin:/bin /absolute/path/to/ynab-mcp
+```
+
+A working server returns an `initialize` result followed by all 47 tools.
+
+#### Troubleshooting
+
+| Symptom | Cause |
+|---------|-------|
+| Server never appears; no error | Bare command name instead of an absolute path, or Desktop was not fully quit (⌘Q) |
+| Tools load, every report is empty | Database not populated yet — run `ynab sync` |
+| `Error: YNAB_ACCESS_TOKEN and YNAB_PLAN_ID are required.` | `ynab configure` has not been run, or `HOME` is not what you expect |
+| `ModuleNotFoundError: No module named 'mcp.server.fastmcp'` | The venv resolved `mcp` 2.x. Rebuild it; the dependency is capped at `<2` |
+| `YNAB API error: 500 Internal Server Error` | Transient YNAB server error, **not** a credentials problem (those return `401`). Retry the sync |
+| Two `ynab-mcp` processes | Normal — Desktop starts one server per window. Harmless for reads |
+
+Your credentials are not the cause of a `500`. Before re-running `ynab configure` and
+risking a working config, check the token directly:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $(python3 -c 'import json,os;print(json.load(open(os.path.expanduser("~/.config/ynab-tools/config.json")))["access_token"])')" \
+  https://api.ynab.com/v1/budgets
+```
+
+`200` means the token is fine and the problem is elsewhere.
 
 ### Claude Web (Projects)
 
