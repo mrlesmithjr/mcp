@@ -10,20 +10,20 @@ Fourteen tools ship as marketplace plugins. Two packages support them and are no
 
 | Package | Version | What it does |
 |---------|---------|--------------|
-| `apple-eventkit-tools` | 0.2.3 | Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit |
-| `contacts-tools` | 0.2.2 | Contacts read/write via the Google People API |
-| `flightops` | 0.1.6 | Flight price tracking (Google Flights, no API key) |
-| `homeops` | 0.1.22 | Home maintenance operations: tasks, pest, services, HVAC |
-| `imessage-tools` | 0.1.8 | Read iMessage chats and send via AppleScript |
-| `launchd-tools` | 0.1.3 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
-| `lawnops` | 1.0.43 | Lawn care: weather, irrigation, treatments, products |
-| `mail-tools` | 0.1.34 | Apple Mail read, search, compose across accounts |
-| `nextdns-tools` | 0.1.12 | NextDNS analytics, blocking stats, device activity |
-| `obsidian-search-tools` | 0.1.7 | Hybrid semantic and keyword search over an Obsidian vault |
-| `sheets-tools` | 0.2.2 | Google Sheets read/write via the Sheets API v4, plus spreadsheet discovery and sharing via Drive |
-| `unifi-tools` | 0.1.26 | UniFi network: devices, clients, VLANs, firewall |
-| `weather-tools` | 0.1.5 | Historical weather data via Open-Meteo |
-| `ynab-tools` | 1.0.382 | YNAB budget sync, payee cleanup, financial analysis |
+| `apple-eventkit-tools` | 0.2.4 | Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit |
+| `contacts-tools` | 0.2.3 | Contacts read/write via the Google People API |
+| `flightops` | 0.1.7 | Flight price tracking (Google Flights, no API key) |
+| `homeops` | 0.1.23 | Home maintenance operations: tasks, pest, services, HVAC |
+| `imessage-tools` | 0.1.9 | Read iMessage chats and send via AppleScript |
+| `launchd-tools` | 0.1.4 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
+| `lawnops` | 1.0.44 | Lawn care: weather, irrigation, treatments, products |
+| `mail-tools` | 0.1.35 | Apple Mail read, search, compose across accounts |
+| `nextdns-tools` | 0.1.13 | NextDNS analytics, blocking stats, device activity |
+| `obsidian-search-tools` | 0.1.8 | Hybrid semantic and keyword search over an Obsidian vault |
+| `sheets-tools` | 0.2.3 | Google Sheets read/write via the Sheets API v4, plus spreadsheet discovery and sharing via Drive |
+| `unifi-tools` | 0.1.27 | UniFi network: devices, clients, VLANs, firewall |
+| `weather-tools` | 0.1.6 | Historical weather data via Open-Meteo |
+| `ynab-tools` | 1.0.383 | YNAB budget sync, payee cleanup, financial analysis |
 | `mcp-common` | (library) | Shared helpers: logging, layered config, paths, errors. Not a plugin. |
 | `homeops-coordinator` | (daemon) | LaunchAgent that coordinates home ops across tools. Not a plugin. |
 

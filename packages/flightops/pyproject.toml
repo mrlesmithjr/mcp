@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-flightops"
-version = "0.1.6"
+version = "0.1.7"
 description = "Flight price tracker CLI: monitor fares over time, spot patterns, and find the best time to buy"
 readme = "README.md"
 license = "MIT"
@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
     "fast-flights>=3.0rc0",
-    "mcp",
+    "mcp>=1.0,<2",
 ]
 
 [project.scripts]

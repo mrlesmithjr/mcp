@@ -129,6 +129,36 @@ plugin schema validator. Verified end to end on codex-cli 0.144.6: a live
 `codex exec` session against `weather-tools` and `ynab-tools` recorded a real
 `mcp_tool_call` for the installed server, no shell fallback (issue #133).
 
+### Which install path to use
+
+Three consumption paths, and they do not overlap. Picking the wrong one is the most
+common source of confusion, because two of them can silently fight over
+`~/.local/bin/<cli>`.
+
+| Situation | Path | How |
+|-----------|------|-----|
+| **This repo is checked out** (dev machine) | Workspace venv | `uv sync --all-packages`, then `uv run python dev/register_dev.py` to register `<tool>-dev` servers pointing at `.venv/bin/` |
+| **No checkout** (consumer machine) | Marketplace plugin | `/plugin marketplace add mrlesmithjr/mcp` + `/plugin install <slug>@mrlesmithjr-mcp`; the SessionStart hook self-bootstraps the venv, CLIs, and LaunchAgents |
+| **Claude Desktop** | Neither | Desktop has no plugin/marketplace support and does not read Claude Code's MCP config. Point `claude_desktop_config.json` at an absolute path to the `<tool>-mcp` binary |
+
+Do **not** install the marketplace plugin on a dev machine. `dev/register_dev.py`
+states the rule directly: marketplace plugins are consumer-only. A plugin install
+clones the package and builds its own venv, so you end up running a frozen copy of
+the code you are editing — and `install_deps.sh` unconditionally re-points
+`~/.local/bin/<cli>` at that venv on every run, silently taking the CLI away from the
+workspace build.
+
+Running `hooks/install_deps.sh` by hand from a checkout has the same effect: with no
+plugin runtime supplying `CLAUDE_PLUGIN_ROOT`/`CLAUDE_PLUGIN_DATA`, it falls back to
+`packages/<tool>` and `~/.local/share/<tool>`, producing a plugin-shaped venv with no
+plugin behind it. It also installs **unlocked** (`uv pip install ${PLUGIN_ROOT}`), so
+it can resolve dependency versions the workspace lockfile would never pick.
+
+For Claude Desktop specifics — absolute path requirement, credential handling,
+verifying with a raw MCP handshake, troubleshooting — see
+`packages/ynab-tools/docs/mcp-server.md`, which is the worked reference for any tool
+in this workspace.
+
 ---
 
 ## Common operations

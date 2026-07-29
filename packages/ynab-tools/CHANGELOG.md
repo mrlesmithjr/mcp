@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Fixed
+
+- **Claude Desktop setup docs were wrong and could not work as written.** Both
+  `docs/mcp-server.md` and `docs/getting-started.md` showed
+  `"command": "ynab-mcp"` — a bare name. Desktop launches servers with a minimal
+  environment and does not inherit the shell `PATH`, and `ynab-mcp` is deliberately
+  never symlinked into `~/.local/bin` (only human-facing CLIs are), so the server
+  silently failed to start. Both now require an absolute path and explain how to
+  find it for each install method. `mcp-server.md` also drops the `env` block that
+  put a second plaintext copy of the access token in Desktop's config, in favor of
+  the mode-600 `~/.config/ynab-tools/config.json` that `ynab configure` writes, and
+  gains verification and troubleshooting sections.
+
 ### Changed
 
 - **Dashboard is now opt-in.** The plugin no longer ships or installs a

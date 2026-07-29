@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-ynab-tools"
-version = "1.0.382"
+version = "1.0.383"
 description = "YNAB budget data sync, payee management, and financial analysis"
 readme = "README.md"
 license = "MIT"
@@ -27,7 +27,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
     "requests>=2.28",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "numpy>=1.26",
 ]
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-imessage-tools"
-version = "0.1.8"
+version = "0.1.9"
 description = "iMessage MCP server: read chats from chat.db, send via AppleScript"
 readme = "README.md"
 license = "MIT"
@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
     "pyobjc-framework-Contacts>=10.0",
 ]
 

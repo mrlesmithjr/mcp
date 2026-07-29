@@ -20,19 +20,25 @@ Loads budget methodology and workflow knowledge so Claude understands how to use
 
 The ynab-tools MCP server must be configured in Claude Desktop's native config (not in this plugin) because Cowork runs in a sandbox that cannot spawn local processes.
 
-Add to `~/.claude/claude_desktop_config.json`:
+Merge into `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS).
+That file also holds Desktop's own settings, so add the key rather than replacing it:
 
 ```json
 {
   "mcpServers": {
     "ynab-tools": {
-      "command": "ynab-mcp"
+      "command": "/absolute/path/to/ynab-mcp"
     }
   }
 }
 ```
 
-`ynab-mcp` is the console script installed with the package, so no working directory or module path is needed once it is on your PATH.
+The path must be absolute. Desktop launches servers with a minimal environment and
+does not inherit your shell `PATH`, so a bare `ynab-mcp` fails to start with no
+useful error. Find yours with `which ynab-mcp`. Then quit Desktop with **⌘Q** and
+reopen — closing the window does not reload the config.
+
+Full setup, verification, and troubleshooting: [../docs/mcp-server.md](../docs/mcp-server.md).
 
 ### Prerequisites
 

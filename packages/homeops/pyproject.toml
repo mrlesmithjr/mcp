@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-homeops"
-version = "0.1.22"
+version = "0.1.23"
 description = "Home maintenance operations CLI: recurring tasks, pest control, service providers, and cost tracking"
 readme = "README.md"
 license = "MIT"
@@ -26,7 +26,7 @@ dependencies = [
     "mrlesmithjr-mcp-apple-eventkit-tools>=0.2.3",
     "pyyaml>=6.0",
     "requests>=2.28.0",
-    "mcp>=1.0",
+    "mcp>=1.0,<2",
 ]
 
 [project.optional-dependencies]
