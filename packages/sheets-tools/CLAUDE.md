@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **Status**: ACTIVE
-**Last Updated**: 2026-07-11
+**Last Updated**: 2026-07-29
 
 ## Overview
 
@@ -24,6 +24,8 @@ Copy the shared Google OAuth client credentials to `~/.config/google/credentials
 **Before the first authorize**, the Sheets API and the Drive API must both be enabled on that GCP project - neither is on by default even though the project already has Gmail/Calendar/People APIs enabled. This is a one-time Google Cloud requirement, not something the code can do for you: enable them at `console.cloud.google.com/apis/library/sheets.googleapis.com` and `console.cloud.google.com/apis/library/drive.googleapis.com`, or `gcloud services enable sheets.googleapis.com drive.googleapis.com` if using the CLI. Skipping this step surfaces as a 403 error on the first live API call, not at authorize time. The Drive API backs `sheet_list`/`sheet_share` only - every other tool here only ever calls the Sheets API.
 
 **Existing users** (authorized before `sheet_list`/`sheet_share` were added): re-run `google_sheets_authorize` once to pick up the widened `drive` scope (see Key Patterns below). A pre-existing spreadsheets-only token 403s on `sheet_list`/`sheet_share` until re-authorized.
+
+**Claude Desktop** is a separate registration path - it has no plugin/marketplace support and does not read Claude Code's MCP config, so it needs its own entry in `claude_desktop_config.json` pointing at an absolute path to `sheets-mcp` (there is no `~/.local/bin` symlink: the plugin installer only symlinks console scripts that do not end in `-mcp`, and `sheets-mcp` is this package's only script). Authorization is shared, not per-client - the token at `~/.config/sheets-tools/google_tokens.json` is whatever was last authorized from any client. Full runbook, including the empty-environment verification handshake and a troubleshooting table, is in `README.md` under Configuration -> Claude Desktop.
 
 ## Architecture
 
