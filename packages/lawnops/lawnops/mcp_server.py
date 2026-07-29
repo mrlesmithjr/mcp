@@ -524,17 +524,26 @@ def treatment_list(year: int | None = None) -> str:
 
 @mcp.tool(annotations=_READ_LOCAL)
 def mowing_summary(year: int | None = None) -> str:
-    """Mowing season summary - visits, costs, and totals."""
-    try:
-        from lawnops.db import get_mowing_summary
+    """Mowing season summary - visits, costs, and totals.
 
-        rows, total_visits, total_cost, yr = get_mowing_summary(_config(), year)
+    Returns JSON: {year, visits, total_visits, total_cost, gap}. `gap` is
+    {last_visit, days_since_last, expected_interval_days, unlogged_suspected},
+    or null when there is nothing to judge. A true `unlogged_suspected` means
+    visits are probably still happening but are not being logged: the counts and
+    costs below it are then understated.
+    """
+    try:
+        from lawnops.db import get_mowing_gap, get_mowing_summary
+
+        config = _config()
+        rows, total_visits, total_cost, yr = get_mowing_summary(config, year)
         return json.dumps(
             {
                 "year": yr,
                 "visits": _rows_to_list(rows),
                 "total_visits": total_visits,
                 "total_cost": total_cost,
+                "gap": get_mowing_gap(config, year),
             }
         )
     except Exception as e:
