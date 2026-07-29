@@ -2,7 +2,10 @@
 .env
 
 # User-specific config (use .example.json as template)
+# category_definitions.json records which merchants you actually shop at, so a
+# populated one is personal data - only the .example.json template ships.
 ynab_tools/data/category_classification.json
+ynab_tools/data/category_definitions.json
 ynab_tools/data/payee_rules.json
 
 # Database

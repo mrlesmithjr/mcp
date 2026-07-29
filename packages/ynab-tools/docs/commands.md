@@ -379,7 +379,7 @@ ynab delete TX_ID --apply     # Skip confirmation
 
 Suggests categories for uncategorized transactions using three signals:
 
-1. **Typical payee match** (HIGH confidence) - payee is defined in `ynab_tools/data/category_definitions.json` for a specific category
+1. **Typical payee match** (HIGH confidence) - payee is defined in `ynab_tools/data/category_definitions.json` (or the shipped `.example.json` template) for a specific category
 2. **Historical pattern** (MEDIUM confidence) - payee consistently categorized the same way in past transactions
 3. **Disambiguation rules** (LOW confidence) - rules for multi-category stores like Target, Amazon, Walmart
 
