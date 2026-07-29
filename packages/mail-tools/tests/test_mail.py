@@ -3321,7 +3321,22 @@ class TestUnifiedBranchTimeoutProtection:
 
     Forces a tiny real timeout via _fast_timeout() so these tests stay fast
     while still exercising the real ThreadPoolExecutor/timeout code path.
+
+    Timing margins matter here. The per-account timeout is 0.05s, so a correct
+    implementation returns at ~0.05s plus scheduler overhead, while a regression
+    to shutdown(wait=True) blocks for the hung account's full sleep. These two
+    outcomes must stay far enough apart that a loaded CI runner cannot blur them:
+    an earlier version slept 0.3s and asserted < 0.2s, which failed on a macOS
+    runner at 0.211s -- 11ms of jitter, not a regression. Sleeping HANG_DELAY and
+    asserting at half of it keeps the correct path ~2x under the bar even with
+    the worst jitter observed, while a regression overshoots by 2x. Widening the
+    gap costs nothing: the hung worker sleeps on a background thread the caller
+    has already abandoned, so it does not extend the test's own runtime.
     """
+
+    # Sleep of the deliberately-hung account, and the bar the caller must beat.
+    HANG_DELAY = 1.0
+    RETURNS_EARLY_UNDER = HANG_DELAY / 2
 
     @staticmethod
     def _fast_timeout(mgr, timeout=0.05):
@@ -3338,7 +3353,7 @@ class TestUnifiedBranchTimeoutProtection:
 
     def test_list_messages_hung_account_does_not_wipe_out_other_results(self, caplog):
         slow_acct = FakeAccount("Slow")
-        slow_inbox = SlowMailbox(FakeMessageCollection([FakeMessage("slow1")]), delay=0.3)
+        slow_inbox = SlowMailbox(FakeMessageCollection([FakeMessage("slow1")]), delay=self.HANG_DELAY)
 
         fast_acct = FakeAccount("Fast")
         fast_inbox = FakeMailbox(FakeMessageCollection([FakeMessage("fast1", date_ts=100)]))
@@ -3357,14 +3372,17 @@ class TestUnifiedBranchTimeoutProtection:
 
         assert [r["message_id"] for r in results] == ["fast1"]
         assert any("Timeout fetching INBOX for Slow" in r.message for r in caplog.records)
-        # Proves the caller actually returns once the timeout elapses,
-        # rather than blocking on ThreadPoolExecutor.__exit__'s wait=True
-        # shutdown until the hung worker thread's 0.3s sleep finishes.
-        assert elapsed < 0.2, f"call blocked for {elapsed:.3f}s - did not return before the hung account finished"
+        # Proves the caller actually returns once the timeout elapses, rather
+        # than blocking on ThreadPoolExecutor.__exit__'s wait=True shutdown
+        # until the hung worker thread's HANG_DELAY sleep finishes.
+        assert elapsed < self.RETURNS_EARLY_UNDER, (
+            f"call blocked for {elapsed:.3f}s - did not return before the hung account finished "
+            f"(timeout is 0.05s, hung account sleeps {self.HANG_DELAY}s)"
+        )
 
     def test_search_messages_hung_account_does_not_wipe_out_other_results(self, caplog):
         slow_acct = FakeAccount("Slow")
-        slow_inbox = SlowMailbox(FakeMessageCollection([FakeMessage("slow1", subject="needle")]), delay=0.3)
+        slow_inbox = SlowMailbox(FakeMessageCollection([FakeMessage("slow1", subject="needle")]), delay=self.HANG_DELAY)
 
         fast_acct = FakeAccount("Fast")
         fast_inbox = FakeMailbox(FakeMessageCollection([FakeMessage("fast1", subject="needle", date_ts=100)]))
@@ -3383,7 +3401,10 @@ class TestUnifiedBranchTimeoutProtection:
 
         assert [r["message_id"] for r in results] == ["fast1"]
         assert any("Timeout searching INBOX for Slow" in r.message for r in caplog.records)
-        # Proves the caller actually returns once the timeout elapses,
-        # rather than blocking on ThreadPoolExecutor.__exit__'s wait=True
-        # shutdown until the hung worker thread's 0.3s sleep finishes.
-        assert elapsed < 0.2, f"call blocked for {elapsed:.3f}s - did not return before the hung account finished"
+        # Proves the caller actually returns once the timeout elapses, rather
+        # than blocking on ThreadPoolExecutor.__exit__'s wait=True shutdown
+        # until the hung worker thread's HANG_DELAY sleep finishes.
+        assert elapsed < self.RETURNS_EARLY_UNDER, (
+            f"call blocked for {elapsed:.3f}s - did not return before the hung account finished "
+            f"(timeout is 0.05s, hung account sleeps {self.HANG_DELAY}s)"
+        )
