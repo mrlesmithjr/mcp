@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Repo-local pre-push for mrlesmithjr/mcp.
+#
+# main is the live marketplace branch (GitHub-sourced, autoUpdate on), so a
+# direct push to main bypasses the CI gate and ships un-reviewed code to every
+# installed plugin. This hook:
+#   1. Delegates to the global pre-push (privacy/Forgejo guard), so setting a
+#      repo-local core.hooksPath does not silently disable it.
+#   2. Blocks any direct push that updates refs/heads/main, steering work
+#      through develop -> PR -> CI (make ship / make release).
+#
+# This is a machine-local guardrail, not server-side enforcement (private repo
+# on the free plan cannot use branch protection / rulesets). Emergency override:
+#   git push --no-verify
+set -euo pipefail
+
+# git feeds pre-push the ref list on stdin: <local ref> <local sha> <remote ref> <remote sha>
+STDIN="$(cat)"
+
+# 1. Run the global pre-push first, if one is configured and executable.
+GLOBAL_HOOKS="$(git config --global --get core.hooksPath || true)"
+if [ -n "${GLOBAL_HOOKS}" ] && [ -x "${GLOBAL_HOOKS}/pre-push" ]; then
+    printf '%s' "${STDIN}" | "${GLOBAL_HOOKS}/pre-push" "$@" || exit $?
+fi
+
+# 2. Reject any update to main.
+while IFS=' ' read -r _lref _lsha rref _rsha; do
+    [ -z "${rref:-}" ] && continue
+    if [ "${rref}" = "refs/heads/main" ]; then
+        echo "" >&2
+        echo "BLOCKED: direct push to main." >&2
+        echo "main is the live marketplace branch and must go through CI." >&2
+        echo "Push to develop and open a PR:  make ship TOOL=<slug>   (or make release)" >&2
+        echo "Emergency override:  git push --no-verify" >&2
+        exit 1
+    fi
+done <<< "${STDIN}"
+
+exit 0

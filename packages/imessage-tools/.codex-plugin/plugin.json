@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "iMessage MCP server: read chats from chat.db, send via AppleScript",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Communication",
+    "defaultPrompt": [
+      "Show my unread messages across all allowed chats."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "iMessage Tools",
+    "longDescription": "iMessage MCP server: read chats from chat.db, send via AppleScript",
+    "shortDescription": "iMessage MCP server: read chats from chat.db, send via AppleScript"
+  },
+  "mcpServers": {
+    "imessage-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "imessage-tools",
+  "version": "0.1.8"
+}

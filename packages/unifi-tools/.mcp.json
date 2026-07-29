@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "unifi-tools": {
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/hooks/run_server.sh"
+      ],
+      "command": "bash"
+    }
+  }
+}

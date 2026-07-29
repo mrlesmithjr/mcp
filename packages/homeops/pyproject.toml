@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-homeops"
+version = "0.1.22"
+description = "Home maintenance operations CLI: recurring tasks, pest control, service providers, and cost tracking"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Larry Smith Jr" },
+]
+keywords = ["home-maintenance", "house", "pest-control", "appliance-tracking"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Topic :: Home Automation",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "mrlesmithjr-mcp-apple-eventkit-tools>=0.2.3",
+    "pyyaml>=6.0",
+    "requests>=2.28.0",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+
+[project.scripts]
+homeops = "homeops.cli:main"
+homeops-mcp = "homeops.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["homeops*"]
+
+[tool.bumpversion]
+current_version = "0.1.10"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

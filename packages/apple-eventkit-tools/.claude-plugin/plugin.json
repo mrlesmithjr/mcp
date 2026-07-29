@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit",
+  "mcpServers": "./.mcp.json",
+  "name": "apple-eventkit-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.2.3"
+}

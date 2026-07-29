@@ -1,0 +1,72 @@
+gui/501/com.homeops.utility-anomaly = {
+	active count = 0
+	path = /Users/testuser/Library/LaunchAgents/com.homeops.utility-anomaly.plist
+	type = LaunchAgent
+	state = not running
+
+	program = /bin/bash
+	arguments = {
+		/bin/bash
+		/Users/testuser/.local/share/homeops/utility-anomaly.sh
+	}
+
+	stdout path = /Users/testuser/.local/share/homeops/utility-anomaly.log
+	stderr path = /Users/testuser/.local/share/homeops/utility-anomaly.log
+	inherited environment = {
+		SSH_AUTH_SOCK => /var/run/com.apple.launchd.QbSnv8w6yI/Listeners
+	}
+
+	default environment = {
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+	}
+
+	environment = {
+		OSLogRateLimit => 64
+		PATH => /Users/testuser/.local/bin:/usr/local/bin:/usr/bin:/bin
+		HOME => /Users/testuser
+		XPC_SERVICE_NAME => com.homeops.utility-anomaly
+	}
+
+	domain = gui/501 [100023]
+	asid = 100023
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 0
+	last exit code = (never exited)
+
+	event triggers = {
+		com.homeops.utility-anomaly.268435542 => {
+			keepalive = 0
+			service = com.homeops.utility-anomaly
+			stream = com.apple.launchd.calendarinterval
+			monitor = com.apple.UserEventAgent-Aqua
+			descriptor = {
+				"Minute" => 45
+				"Hour" => 7
+				"Day" => 5
+			}
+		}
+	}
+
+	event channels = {
+		"com.apple.launchd.calendarinterval" = {
+			port = 0x0
+			active = 0
+			managed = 1
+			reset = 0
+			hide = 0
+			watching = 1
+		}
+	}
+
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsam memory limit (inactive) = (unlimited)
+	jetsamproperties category = daemon
+	submitted job. ignore execute allowed
+	jetsam thread limit = 32
+	cpumon = default
+
+	properties = inferred program
+}

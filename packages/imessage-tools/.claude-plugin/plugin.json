@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "iMessage MCP server: read chats from chat.db, send via AppleScript",
+  "mcpServers": "./.mcp.json",
+  "name": "imessage-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.8"
+}

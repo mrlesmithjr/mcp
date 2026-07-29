@@ -1,0 +1,122 @@
+# LawnOps Configuration
+# Copy this file to config.yaml and update with your values.
+
+location:
+  name: "Your City, ST"
+  latitude: 34.0522          # Your property latitude
+  longitude: -118.2437       # Your property longitude
+  timezone: "America/New_York"
+  yard_sqft: 20000            # Total maintained yard area in sq ft
+  grass_type: bermuda          # Grass type (bermuda) - used for fertilizer recommendations
+
+# Open-Meteo API settings (free, no key required)
+api:
+  base_url: "https://api.open-meteo.com/v1/forecast"
+  past_days: 14
+  forecast_days: 7
+
+# Lawn care thresholds (°F) - adjust for your grass type and zone
+thresholds:
+  pre_emergent_soil_temp: 55.0    # Apply before soil consistently hits this
+  spray_soil_temp: 60.0           # Post-emergent needs soil above this
+  spray_air_temp: 60.0            # Air temp minimum for spraying
+  spray_max_wind_mph: 10.0        # Max wind speed for spraying
+  spray_rain_hours: 48
+  granular_max_wind_mph: 15.0
+  granular_min_air_temp: 50.0            # No rain window needed (hours)
+  bermuda_greenup_soil_temp: 65.0        # Begin broadleaf weed spray schedule once soil hits this
+
+# Products - your preferred products for advisory messages
+products:
+  pre_emergent: "Pre-emergent herbicide"
+  post_emergent: "Post-emergent weed spray"
+
+# Hunter Hydrawise irrigation controller (optional)
+# Credentials loaded from .env (HYDRAWISE_USERNAME, HYDRAWISE_PASSWORD)
+# Uses GraphQL v2 API via pydrawise library
+hydrawise:
+  post_treatment_hold_hours: 24
+  zone_notes: {}
+  # Example zone notes:
+  #   1: "Front yard rotors"
+  #   2: "Back yard sprays"
+
+# Apple Reminders (syncs to iPhone via iCloud)
+# reminders:
+#   list: "Reminders"          # Apple Reminders list name
+#   default_time: "10:00"      # Default reminder time if not specified (HH:MM)
+
+# Mowing service defaults
+mowing:
+  default_provider: "Mowing Service"
+  schedule_day: "friday"        # Day of week mowing service comes
+  no_mow_buffer_days: 2         # No-mow buffer before/after mow day
+
+# SQLite database for maintenance tracking
+database:
+  path: "~/.local/share/lawnops/lawnops.db"
+  auto_log: true
+
+# Obsidian vault integration (optional)
+# obsidian:
+#   task_list: "/path/to/your/vault/Task List.md"
+
+# YNAB integration (optional - requires ynab-tools with synced database)
+# Install ynab-tools separately and run 'ynab sync' to populate the database.
+# ynab:
+#   db_path: "~/.local/share/ynab-tools/ynab.db"
+#   category: "Home: Yard & Outdoor Maintenance"
+#   # Map payee substrings to canonical mowing provider names
+#   provider_aliases:
+#     "joes mowing": "Joe's Mowing Service"
+#     "green lawn co": "Green Lawn Co"
+#   # Keywords that identify mowing/lawn service transactions
+#   mowing_keywords:
+#     - "lawn care"
+#     - "lawn service"
+#     - "mowing"
+#     - "yard care"
+#     - "landscape"
+#     - "landscaping"
+#   # Keywords for categorizing purchases (override defaults as needed)
+#   # category_keywords:
+#   #   equipment: ["mower", "trimmer", "chainsaw", "spreader"]
+#   #   product: ["fertilizer", "pre-emergent", "herbicide"]
+#   # Payees to skip during import
+#   # skip_payees: ["starting balance"]
+
+# Product application rates for coverage and mix-rate calculations
+# Add entries for your products to enable 'lawnops coverage' and 'lawnops mix'
+product_rates:
+  "weed b-gon":
+    type: spray
+    concentrate_oz_per_gallon:
+      southern: 1.5
+      northern: 2.5
+    coverage_sqft_per_gallon: 500
+    notes: "No mow 2 days before/after. Apply 60-85°F."
+  "bug b-gon":
+    type: granular
+    bag_size_lbs: 10
+    bag_coverage_sqft: 16500
+    notes: "Apply with spreader, water in after."
+  "lesco 0-0-7":
+    type: granular
+    bag_size_lbs: 50
+    bag_coverage_sqft: 12500
+    notes: "Pre-emergent. Do not water in immediately."
+  "lebanon prodiamine":
+    type: granular
+    bag_size_lbs: 40
+    bag_coverage_sqft: 20000
+    notes: "Pre-emergent. Activate with rain or irrigation."
+  "lesco 18-0-9":
+    type: granular
+    bag_size_lbs: 50
+    bag_coverage_sqft: 12500
+    notes: "Weed & Feed. Apply when Bermuda is actively growing."
+  "lesco 24-0-11":
+    type: granular
+    bag_size_lbs: 50
+    bag_coverage_sqft: 12500
+    notes: "Summer fertilizer for heat/drought stress."

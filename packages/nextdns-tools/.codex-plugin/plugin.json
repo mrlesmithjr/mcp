@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "NextDNS operations: analytics, blocking stats, device activity, profile management",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Security",
+    "defaultPrompt": [
+      "What got blocked on my network today?"
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "NextDNS Tools",
+    "longDescription": "NextDNS operations: analytics, blocking stats, device activity, profile management",
+    "shortDescription": "NextDNS operations: analytics, blocking stats, device activity, profile management"
+  },
+  "mcpServers": {
+    "nextdns-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "nextdns-tools",
+  "version": "0.1.12"
+}

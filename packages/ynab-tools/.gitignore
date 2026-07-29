@@ -1,0 +1,37 @@
+# Secrets
+.env
+
+# User-specific config (use .example.json as template)
+ynab_tools/data/category_classification.json
+ynab_tools/data/payee_rules.json
+
+# Database
+*.db
+
+# Backups
+backups/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code (track commands, ignore local settings)
+.claude/settings.local.json
+!CLAUDE.md
+
+# Claude Code plugin build artifacts (contain personal metadata)
+plugin/.claude-plugin/

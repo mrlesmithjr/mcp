@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "retail-shipping-receipts",
+      "label": "Retail order/shipping receipts",
+      "senders": ["from:amazon.com", "from:homedepot.com", "from:macys.com"],
+      "default_action": "archive_and_mark_read",
+      "status": "active",
+      "confidence": "high",
+      "last_reviewed": "2026-07-01",
+      "review_after_days": null,
+      "notes": "Low-value transactional noise, safe to auto-clear.",
+      "source": "manual-session-2026-07-01"
+    },
+    {
+      "id": "financial-statements",
+      "label": "Routine statement/bill-ready notices",
+      "senders": ["from:bankofamerica.com", "from:fidelity.com"],
+      "default_action": "hold",
+      "status": "leave_alone",
+      "confidence": "high",
+      "last_reviewed": "2026-07-01",
+      "review_after_days": 90,
+      "notes": "User wants to eyeball these personally.",
+      "source": "manual-session-2026-07-01"
+    }
+  ]
+}

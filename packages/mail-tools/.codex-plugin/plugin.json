@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Communication",
+    "defaultPrompt": [
+      "Show unread mail counts across all my accounts."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Mail Tools",
+    "longDescription": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge",
+    "shortDescription": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge"
+  },
+  "mcpServers": {
+    "mail-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "mail-tools",
+  "version": "0.1.34"
+}

@@ -1,0 +1,86 @@
+gui/501/com.methodicalcloud.forgejo-backup = {
+	active count = 0
+	path = /Users/testuser/Library/LaunchAgents/com.methodicalcloud.forgejo-backup.plist
+	type = LaunchAgent
+	state = not running
+
+	program = /opt/homebrew/bin/bash
+	arguments = {
+		/opt/homebrew/bin/bash
+		/Users/testuser/.local/bin/forgejo-backup
+	}
+
+	stdout path = /Users/testuser/Backups/Forgejo/.launchd.out.log
+	stderr path = /Users/testuser/Backups/Forgejo/.launchd.err.log
+	inherited environment = {
+		SSH_AUTH_SOCK => /var/run/com.apple.launchd.QbSnv8w6yI/Listeners
+	}
+
+	default environment = {
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+	}
+
+	environment = {
+		OSLogRateLimit => 64
+		PATH => /Users/testuser/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+		HOME => /Users/testuser
+		XPC_SERVICE_NAME => com.methodicalcloud.forgejo-backup
+	}
+
+	domain = gui/501 [100023]
+	asid = 100023
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 3
+	last exit code = 0
+
+	event triggers = {
+		com.methodicalcloud.forgejo-backup.268435500 => {
+			keepalive = 0
+			service = com.methodicalcloud.forgejo-backup
+			stream = com.apple.launchd.calendarinterval
+			monitor = com.apple.UserEventAgent-Aqua
+			descriptor = {
+				"Minute" => 0
+				"Hour" => 12
+			}
+		}
+	}
+
+	event channels = {
+		"com.apple.launchd.calendarinterval" = {
+			port = 0x10f293
+			active = 0
+			managed = 1
+			reset = 0
+			hide = 0
+			watching = 1
+		}
+	}
+
+	resource coalition = {
+		ID = 6599
+		type = resource
+		state = active
+		active count = 1
+		name = com.methodicalcloud.forgejo-backup
+	}
+
+	jetsam coalition = {
+		ID = 6600
+		type = jetsam
+		state = active
+		active count = 1
+		name = com.methodicalcloud.forgejo-backup
+	}
+
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsam memory limit (inactive) = (unlimited)
+	jetsamproperties category = daemon
+	jetsam thread limit = 32
+	cpumon = default
+
+	properties = inferred program
+}

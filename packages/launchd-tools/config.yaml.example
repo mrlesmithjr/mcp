@@ -1,0 +1,17 @@
+# launchd-tools configuration
+# Copy to ~/.config/launchd_tools/config.yaml
+#
+# All settings are optional. Defaults work with zero configuration.
+
+# label_prefixes: which LaunchAgent labels are visible to this tool.
+# The built-in defaults cover personal homeops/lawnops/ynab-tools/mrlesmithjr
+# com.methodicalcloud and com.larrysmithjr prefixes.
+# Override here or via the LAUNCHD_TOOLS_LABEL_PREFIXES env var (comma-separated).
+#
+# label_prefixes:
+#   - com.homeops
+#   - com.lawnops
+#   - com.ynab-tools
+#   - com.mrlesmithjr
+#   - com.methodicalcloud
+#   - com.larrysmithjr

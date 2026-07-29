@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Google Sheets MCP server: read and write spreadsheets via the Sheets API",
+  "mcpServers": "./.mcp.json",
+  "name": "sheets-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.2.2"
+}

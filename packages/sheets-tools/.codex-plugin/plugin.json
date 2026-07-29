@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Google Sheets MCP server: read and write spreadsheets via the Sheets API",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "defaultPrompt": [
+      "List my spreadsheets and show me one's tabs."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Sheets Tools",
+    "longDescription": "Google Sheets MCP server: read and write spreadsheets via the Sheets API",
+    "shortDescription": "Google Sheets MCP server: read and write spreadsheets via the Sheets API"
+  },
+  "mcpServers": {
+    "sheets-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "sheets-tools",
+  "version": "0.2.2"
+}

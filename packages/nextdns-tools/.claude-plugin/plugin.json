@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "NextDNS operations: analytics, blocking stats, device activity, profile management",
+  "mcpServers": "./.mcp.json",
+  "name": "nextdns-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.12"
+}

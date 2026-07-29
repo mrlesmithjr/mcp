@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-obsidian-search-tools"
+version = "0.1.7"
+description = "Semantic and keyword search over an Obsidian vault via MCP"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{name = "Larry Smith Jr", email = "mrlesmithjr@gmail.com"}]
+keywords = ["mcp", "claude", "ai", "obsidian", "search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "mcp>=1.0",
+    "fastembed>=0.4.0",
+    "sqlite-vec>=0.1.0",
+    "tiktoken>=0.7.0",
+    "typer>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+    "fastembed>=0.4.0",
+    "sqlite-vec>=0.1.0",
+    "tiktoken>=0.7.0",
+    "typer>=0.12.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mrlesmithjr/mcp"
+Repository = "https://github.com/mrlesmithjr/mcp"
+Issues = "https://github.com/mrlesmithjr/mcp/issues"
+
+[project.scripts]
+obsidian-search-tools-mcp = "obsidian_search_tools.mcp_server:main"
+obsidian-search-tools = "obsidian_search_tools.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["obsidian_search_tools*"]
+
+[tool.bumpversion]
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

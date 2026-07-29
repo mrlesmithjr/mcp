@@ -1,0 +1,7 @@
+# obsidian-search-tools configuration
+# Copy to ~/.config/obsidian_search_tools/config.yaml and fill in your values.
+
+# example_setting: value
+
+# db_path: ~/.local/share/obsidian_search_tools/obsidian_search_tools.db  # optional override
+

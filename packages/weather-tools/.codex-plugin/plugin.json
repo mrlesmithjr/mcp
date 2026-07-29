@@ -1,0 +1,31 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Historical weather data via Open-Meteo API",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "category": "Data & Analytics",
+    "defaultPrompt": [
+      "How many consecutive days has it rained at my location?"
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Weather Tools",
+    "longDescription": "Historical weather data via Open-Meteo API",
+    "shortDescription": "Historical weather data via Open-Meteo API"
+  },
+  "mcpServers": {
+    "weather-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "weather-tools",
+  "version": "0.1.5"
+}

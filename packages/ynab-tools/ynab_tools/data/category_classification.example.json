@@ -1,0 +1,25 @@
+{
+  "fixed": [
+    "Mortgage & Rent",
+    "Auto: Car Payment",
+    "Auto: Insurance",
+    "Utilities",
+    "Home: Insurance",
+    "Mobile Phone",
+    "Subscriptions (Personal)"
+  ],
+  "discretionary": [
+    "Groceries",
+    "Dining Out",
+    "Coffee & Alcohol",
+    "Clothing",
+    "Entertainment",
+    "Hobbies & Recreation",
+    "Personal Care"
+  ],
+  "savings": [
+    "Savings: General",
+    "Savings: Emergency Fund",
+    "Investments: Brokerage"
+  ]
+}

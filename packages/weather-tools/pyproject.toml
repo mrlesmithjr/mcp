@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-weather-tools"
+version = "0.1.5"
+description = "Historical weather data via Open-Meteo API"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{name = "Larry Smith Jr", email = "mrlesmithjr@gmail.com"}]
+keywords = ["mcp", "claude", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "mcp>=1.0",
+    "httpx>=0.27.0",
+    "typer>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+    "mcp>=1.0",
+    "httpx>=0.27.0",
+    "typer>=0.12.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mrlesmithjr/weather-tools"
+Repository = "https://github.com/mrlesmithjr/weather-tools"
+Issues = "https://github.com/mrlesmithjr/weather-tools/issues"
+
+[project.scripts]
+weather-tools-mcp = "weather_tools.mcp_server:main"
+
+weather-tools = "weather_tools.cli:main"
+
+
+[tool.setuptools.packages.find]
+include = ["weather_tools*"]
+
+[tool.bumpversion]
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

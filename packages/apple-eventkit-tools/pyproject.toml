@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-apple-eventkit-tools"
+version = "0.2.3"
+description = "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Larry Smith Jr" },
+]
+keywords = ["apple-calendar", "apple-reminders", "eventkit", "icloud", "macos", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Scheduling",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.2",
+    "pyobjc-framework-Cocoa>=10.0",
+    "pyobjc-framework-EventKit>=10.0",
+    "mcp>=1.0",
+    "prompt-security-utils>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+]
+
+[project.scripts]
+apple-eventkit-mcp = "apple_eventkit_tools.mcp_server:main"
+ical-mcp = "apple_eventkit_tools.mcp_server:main"
+reminders-mcp = "apple_eventkit_tools.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["apple_eventkit_tools*"]
+
+[project.urls]
+Homepage = "https://github.com/mrlesmithjr/mcp"
+Repository = "https://github.com/mrlesmithjr/mcp"
+"Bug Tracker" = "https://github.com/mrlesmithjr/mcp/issues"
+
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.ruff]
+line-length = 120
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

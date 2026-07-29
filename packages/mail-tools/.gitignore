@@ -1,0 +1,12 @@
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.DS_Store
+.venv/
+venv/
+!CLAUDE.md

@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint and check generated files
+    # Pure static analysis + metadata generation - no package needs to be
+    # installed to run these, so this stays on the cheap Linux runner
+    # regardless of which packages contain PyObjC code.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Sync workspace root (dev deps only)
+        run: uv sync
+
+      - name: Check generated files are up to date
+        run: uv run python scripts/gen_marketplace.py --check
+
+      - name: Ruff lint
+        run: uv run ruff check packages/
+
+      - name: Ruff format check
+        run: uv run ruff format --check packages/
+
+  test-linux:
+    name: Test (Linux packages)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Sync Linux-safe packages
+        # Every workspace member except the macOS-required ones below (see
+        # test-macos). --extra dashboard so ynab-tools' dashboard deps
+        # (fastapi, uvicorn) are present for its tests.
+        run: |
+          uv sync --extra dashboard \
+            --package mrlesmithjr-mcp-common \
+            --package mrlesmithjr-mcp-flightops \
+            --package mrlesmithjr-mcp-launchd-tools \
+            --package mrlesmithjr-mcp-nextdns-tools \
+            --package mrlesmithjr-mcp-obsidian-search-tools \
+            --package mrlesmithjr-mcp-sheets-tools \
+            --package mrlesmithjr-mcp-unifi-tools \
+            --package mrlesmithjr-mcp-weather-tools \
+            --package mrlesmithjr-mcp-ynab-tools
+
+      - name: Run tests
+        # One pytest invocation PER package, not a combined multi-path run.
+        # Many packages share the literal filename tests/test_mcp_server.py,
+        # and --import-mode=importlib does not fully prevent collection
+        # collisions across them when collected together in one session
+        # (see #96 - confirmed real tests silently missing from combined
+        # collection). Running each package alone sidesteps that entirely,
+        # regardless of #96's root cause.
+        run: |
+          set -e
+          for pkg in mcp-common flightops launchd-tools \
+                     nextdns-tools obsidian-search-tools sheets-tools \
+                     unifi-tools weather-tools ynab-tools; do
+            echo "::group::pytest packages/$pkg"
+            uv run pytest packages/$pkg -v
+            echo "::endgroup::"
+          done
+
+  test-macos:
+    name: Test (macOS / PyObjC packages)
+    # apple-eventkit-tools, contacts-tools, imessage-tools, and mail-tools all
+    # depend on pyobjc-* (macOS-only wheels); homeops-coordinator, homeops, and
+    # lawnops transitively depend on apple-eventkit-tools (homeops/lawnops as
+    # of issue #146, for direct Reminders creation). Every other package is
+    # plain Python and runs in test-linux instead - keep this job's package
+    # list minimal, since macOS runner minutes are billed at a 10x multiplier
+    # versus Linux.
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Sync macOS-required packages
+        run: |
+          uv sync \
+            --package mrlesmithjr-mcp-apple-eventkit-tools \
+            --package mrlesmithjr-mcp-contacts-tools \
+            --package mrlesmithjr-mcp-imessage-tools \
+            --package mrlesmithjr-mcp-mail-tools \
+            --package mrlesmithjr-mcp-homeops-coordinator \
+            --package mrlesmithjr-mcp-homeops \
+            --package mrlesmithjr-mcp-lawnops
+
+      - name: Run tests
+        # One pytest invocation per package - see the matching comment in
+        # test-linux above (#96: combined multi-package collection silently
+        # drops tests when packages share a test filename).
+        run: |
+          set -e
+          for pkg in apple-eventkit-tools contacts-tools imessage-tools \
+                     mail-tools homeops-coordinator homeops lawnops; do
+            echo "::group::pytest packages/$pkg"
+            uv run pytest packages/$pkg -v
+            echo "::endgroup::"
+          done

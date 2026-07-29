@@ -1,0 +1,181 @@
+{
+  "description": "Defines what each YNAB budget category covers, based on actual usage patterns. Used for categorizing transactions from multi-category payees like Target, Amazon, Walmart, etc.",
+  "categories": {
+    "Auto: Fuel": {
+      "description": "Gas and fuel for vehicles",
+      "keywords": ["gas", "fuel", "car wash"],
+      "typical_payees": ["Chevron", "RaceTrac", "QT", "Shell", "BP", "Valero", "Circle K", "Exxonmobil", "Sam's Club Gas", "Costco Gas", "Kroger Fuel"]
+    },
+    "Auto: Insurance": {
+      "description": "Vehicle insurance premiums",
+      "typical_payees": ["State Farm"]
+    },
+    "Auto: Repairs & Maintenance": {
+      "description": "Vehicle repairs, maintenance, inspections, registration, car washes",
+      "keywords": ["oil change", "tire", "brake", "vehicle tag", "registration", "car wash"],
+      "typical_payees": ["Ford Service", "Jiffy Lube", "Meineke", "Firestone"]
+    },
+    "Clothing": {
+      "description": "Clothes, shoes, accessories. NOT costumes or uniforms (those go to business categories)",
+      "keywords": ["shirt", "pants", "shorts", "shoes", "dress", "jacket", "pajama", "socks", "underwear", "jeans", "sweater", "hoodie"],
+      "typical_payees": ["Old Navy", "Kohl's", "Gap", "Skechers", "The North Face", "Nordstrom Rack", "American Eagle Outfitters", "Macy's", "Madewell"]
+    },
+    "Coffee & Alcohol": {
+      "description": "Coffee shops, bars, breweries, wineries, alcohol purchases. NOT dining meals at places that also serve drinks",
+      "keywords": ["coffee", "beer", "wine", "brewery", "winery", "alcohol", "spirits", "cocktail"],
+      "typical_payees": ["Starbucks", "Dunkin'", "Total Wine & More", "BJ's Brewhouse"]
+    },
+    "Concerts": {
+      "description": "Concert and live music event tickets, parking at venues",
+      "keywords": ["concert", "ticket", "show", "live music"],
+      "typical_payees": ["Seat Engine", "TM", "Honk Parking"]
+    },
+    "Dining Out": {
+      "description": "Restaurant meals, fast food, drive-throughs, bakeries, food trucks. The meal itself, not drinks-only outings (those go to Coffee & Alcohol)",
+      "keywords": ["lunch", "dinner", "breakfast", "food", "meal", "pizza", "burger", "sandwich", "bbq"],
+      "typical_payees": ["Chick-Fil-A", "McDonald's", "Starbucks", "Chipotle", "Zaxby's", "Waffle House", "Firehouse Subs", "Culver's", "Five Guys"]
+    },
+    "Dining: Celebration Meals": {
+      "description": "Special occasion meals - birthdays, anniversaries, holidays, date nights. Higher-end or intentionally planned",
+      "keywords": ["celebration", "birthday dinner", "anniversary", "date night"],
+      "typical_payees": ["Fogo de Chão", "Capital Grille", "Ruth's Chris", "Iron Age"]
+    },
+    "Donations": {
+      "description": "Charitable donations, Goodwill drop-offs, Scout support, fundraisers",
+      "keywords": ["donation", "charity", "goodwill", "scout"]
+    },
+    "Gifts & Holidays: General": {
+      "description": "Non-Christmas, non-birthday gifts. Easter supplies, Valentine's Day, Mother's/Father's Day, hostess gifts, party supplies, greeting cards, gift wrapping",
+      "keywords": ["gift", "easter", "valentine", "mother's day", "father's day", "card", "wrapping", "party supplies", "party decor"],
+      "typical_payees": ["Hobby Lobby", "Five Below"]
+    },
+    "Groceries": {
+      "description": "Food and beverages for home consumption. Grocery store trips. NOT household supplies bought at grocery stores (cleaning products, paper goods go to Home: Household Supplies)",
+      "keywords": ["groceries", "food", "produce", "meat", "dairy", "bread", "snacks", "frozen"],
+      "typical_payees": ["Kroger", "Costco", "Publix", "Lowes Foods", "Trader Joe's", "Whole Foods"]
+    },
+    "Haircuts": {
+      "description": "Haircuts and hair styling for family members",
+      "typical_payees": ["Supercuts", "Great Clips", "Sport Clips"]
+    },
+    "Hobbies & Recreation": {
+      "description": "Hobby supplies, recreational activities, scrapbooking, outdoor recreation, gardens/attractions admission. NOT plants or yard supplies (those go to Yard & Outdoor)",
+      "keywords": ["hobby", "scrapbook", "recreation", "tumbler", "jeep accessories"],
+      "typical_payees": ["REI", "Michaels", "JOANN"]
+    },
+    "Home: Decor": {
+      "description": "Decorative items - throw pillows, wall art, picture frames, vases, candles (decorative), seasonal decor, curtains, rugs. Items whose primary purpose is aesthetic",
+      "keywords": ["decor", "pillow", "wall art", "frame", "vase", "candle", "curtain", "rug", "wreath", "decorative", "throw pillow"],
+      "typical_payees": ["Homegoods", "Anthropologie", "Kirkland's"]
+    },
+    "Home: Furniture": {
+      "description": "Furniture purchases - tables, chairs, couches, beds, shelving units, ottomans, desks",
+      "keywords": ["furniture", "table", "chair", "couch", "sofa", "bed", "shelf", "desk", "ottoman", "nightstand"],
+      "typical_payees": ["Wayfair"]
+    },
+    "Home: Household Supplies": {
+      "description": "Consumable and functional household items - cleaning products, paper towels, trash bags, light bulbs, batteries, storage containers, baskets, organizers, air fresheners, candles (functional), laundry supplies, pest control products, small bathroom/kitchen items (plunger, soap dispenser). Items that are used up or serve a purely functional purpose",
+      "keywords": ["basket", "organizer", "storage", "cleaning", "laundry", "trash bag", "paper towel", "light bulb", "battery", "air freshener", "febreeze", "soap", "detergent", "sponge", "plunger", "bin", "container", "adhesive", "tape", "pens", "felt basket"],
+      "typical_payees": ["Bath & Body Works"]
+    },
+    "Home: Projects": {
+      "description": "Home improvement projects - painting, flooring, built-ins, shelving installation, renovation materials. Distinct from repairs (broken things) and maintenance (ongoing upkeep)",
+      "keywords": ["project", "paint", "flooring", "renovation", "shelving", "install", "build"],
+      "typical_payees": ["Sherwin-Williams"]
+    },
+    "Home: Repairs & Maintenance": {
+      "description": "Fixing broken things and scheduled maintenance - plumbing, HVAC, pest control service, appliance repair, window repair, junk removal",
+      "keywords": ["repair", "fix", "plumbing", "hvac", "pest control", "exterminating", "appliance", "window"],
+      "typical_payees": ["Orkin", "Roto-Rooter", "Whirlpool", "1-800-GOT-JUNK"]
+    },
+    "Home: Tools": {
+      "description": "Durable tools and equipment for home use - power tools, hand tools, drill bits, tool accessories, work gloves, safety equipment. NOT garden-specific tools (those go to Yard & Outdoor)",
+      "keywords": ["tool", "drill", "saw", "wrench", "hammer", "screwdriver", "level", "tape measure", "gloves"],
+      "typical_payees": ["The Home Depot", "Lowe's Home Improvement", "Ace Hardware"]
+    },
+    "Home: Yard & Outdoor Maintenance": {
+      "description": "Yard and garden - plants (ornamental AND edible), mulch, soil, fertilizer, garden tools, seeds, pots, planters, lawn care service, outdoor furniture care, patio items, bird feeders, yard decor",
+      "keywords": ["plant", "garden", "mulch", "soil", "fertilizer", "seed", "pot", "planter", "lawn", "yard", "mower", "trimmer", "rose", "peony", "flower", "herb", "vegetable", "tomato", "pepper", "basil", "lavender", "miracle gro", "weed", "grass"],
+      "typical_payees": ["Tractor Supply", "Home Depot Garden Center", "Lowe's Garden Center"]
+    },
+    "Medical & Dental": {
+      "description": "Doctor visits, dental, prescriptions, medical equipment, health supplements, Weight Watchers, therapy, urgent care",
+      "keywords": ["medical", "dental", "prescription", "doctor", "health", "vitamin", "supplement", "therapy"],
+      "typical_payees": ["CVS Pharmacy", "Walgreens", "Quest Diagnostics", "MinuteClinic"]
+    },
+    "Personal Care": {
+      "description": "Toiletries, skincare, makeup, hygiene products, grooming supplies. NOT salon services (those go to Haircuts or Spa & Nails)",
+      "keywords": ["skincare", "makeup", "shampoo", "deodorant", "toothpaste", "razor", "lotion", "cosmetics"],
+      "typical_payees": ["Sephora"]
+    },
+    "Personal Care: Spa & Nails": {
+      "description": "Nail salon, spa services, massage, facials",
+      "keywords": ["nails", "spa", "massage", "facial", "manicure", "pedicure"]
+    },
+    "Pet Care: Food & Supplies": {
+      "description": "Pet food, treats, toys, beds, leashes, collars, litter, grooming supplies",
+      "keywords": ["dog food", "cat food", "pet food", "treats", "leash", "collar", "pet toy", "litter", "pet bed"]
+    },
+    "Pet Care: Vet & Medical": {
+      "description": "Vet visits, pet medications, pet insurance, pet health products",
+      "keywords": ["vet", "veterinary", "pet medicine", "flea", "heartworm"],
+      "typical_payees": ["Banfield Pet Hospital", "VCA Animal Hospital", "Chewy"]
+    },
+    "Random - Oh Shit!": {
+      "description": "Unexpected, unplanned expenses that don't fit elsewhere. Impulse buys, things you forgot to budget for, oddball purchases",
+      "keywords": ["random", "impulse", "unexpected"]
+    },
+    "Subscriptions (Personal)": {
+      "description": "Recurring personal subscriptions - streaming, apps, memberships",
+      "typical_payees": ["Netflix", "Hulu", "Disney+", "Amazon Prime", "Paramount", "Apple", "YNAB", "Google One", "Ancestry.com"]
+    },
+    "Tech Purchases": {
+      "description": "Electronics, gadgets, computer accessories, cables, tech gear",
+      "keywords": ["tech", "computer", "laptop", "monitor", "keyboard", "mouse", "cable", "adapter", "charger", "speaker", "headphone", "electronic"],
+      "typical_payees": ["Best Buy"]
+    }
+  },
+  "split_payees": [
+    "Amazon",
+    "Costco",
+    "Hobby Lobby",
+    "Homegoods",
+    "Kroger",
+    "Publix",
+    "Sam's Club",
+    "Target",
+    "The Home Depot",
+    "Trader Joe's",
+    "Walmart"
+  ],
+  "disambiguation_rules": [
+    {
+      "rule": "Home Depot default is Home: Yard & Outdoor Maintenance unless memo indicates tools, repair materials, or home improvement project supplies",
+      "payee": "The Home Depot"
+    },
+    {
+      "rule": "Target default is based on memo - most Target trips are split transactions across multiple categories",
+      "payee": "Target"
+    },
+    {
+      "rule": "Amazon default is based on memo - Amazon purchases span nearly every category",
+      "payee": "Amazon"
+    },
+    {
+      "rule": "Sam's Club and Costco are typically Groceries unless memo specifies otherwise (clothing, household, pet, etc.)",
+      "payee": "Sam's Club / Costco"
+    },
+    {
+      "rule": "Walmart default is Groceries unless memo indicates otherwise",
+      "payee": "Walmart"
+    },
+    {
+      "rule": "Garden plants (including edible vegetables and herbs) go to Home: Yard & Outdoor Maintenance, NOT Groceries. Groceries is for food ready to consume or cook, not plants to grow",
+      "payee": "*"
+    },
+    {
+      "rule": "Garden supplies (fertilizer, soil, plant food, garden gloves) go to Home: Yard & Outdoor Maintenance, NOT Home: Tools or Home: Household Supplies",
+      "payee": "*"
+    }
+  ]
+}

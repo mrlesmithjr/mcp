@@ -1,0 +1,10 @@
+{
+  "host": "https://unifi.example.com",
+  "username": "your-admin-username",
+  "password": "your-admin-password",
+  "api_key": "your-api-key-here",
+  "port": 443,
+  "site": "default",
+  "verify_ssl": false,
+  "zone_map": {}
+}

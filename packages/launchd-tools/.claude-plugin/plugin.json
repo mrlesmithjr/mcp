@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart",
+  "mcpServers": "./.mcp.json",
+  "name": "launchd-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.3"
+}

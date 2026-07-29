@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "YNAB budget data sync, payee management, and financial analysis",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Finance",
+    "defaultPrompt": [
+      "Give me this month's budget summary and any overspent categories."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "YNAB Tools",
+    "longDescription": "YNAB budget data sync, payee management, and financial analysis",
+    "shortDescription": "YNAB budget data sync, payee management, and financial analysis"
+  },
+  "mcpServers": {
+    "ynab-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "ynab-tools",
+  "version": "1.0.381"
+}

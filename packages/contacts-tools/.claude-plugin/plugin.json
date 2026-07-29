@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Contacts MCP server: read and write contacts via the Google People API",
+  "mcpServers": "./.mcp.json",
+  "name": "contacts-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.2.2"
+}

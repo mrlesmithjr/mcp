@@ -1,0 +1,31 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Semantic and keyword search over an Obsidian vault via MCP",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "category": "Productivity",
+    "defaultPrompt": [
+      "Search my Obsidian vault for notes about a topic."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Obsidian Search Tools",
+    "longDescription": "Semantic and keyword search over an Obsidian vault via MCP",
+    "shortDescription": "Semantic and keyword search over an Obsidian vault via MCP"
+  },
+  "mcpServers": {
+    "obsidian-search-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "obsidian-search-tools",
+  "version": "0.1.7"
+}

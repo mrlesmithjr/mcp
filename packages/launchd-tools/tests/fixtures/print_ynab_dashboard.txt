@@ -1,0 +1,77 @@
+gui/501/com.ynab-tools.dashboard = {
+	active count = 1
+	path = /Users/testuser/Library/LaunchAgents/com.ynab-tools.dashboard.plist
+	type = LaunchAgent
+	state = running
+
+	program = /Users/testuser/.claude/plugins/data/ynab-tools-mrlesmithjr-mcp/venv/bin/ynab-dashboard
+	arguments = {
+		/Users/testuser/.claude/plugins/data/ynab-tools-mrlesmithjr-mcp/venv/bin/ynab-dashboard
+		--host
+		127.0.0.1
+		--port
+		8000
+		--sync-interval
+		60
+	}
+
+	stdout path = /Users/testuser/.local/share/ynab-tools/dashboard.log
+	stderr path = /Users/testuser/.local/share/ynab-tools/dashboard.log
+	inherited environment = {
+		SSH_AUTH_SOCK => /var/run/com.apple.launchd.QbSnv8w6yI/Listeners
+	}
+
+	default environment = {
+		PATH => /usr/bin:/bin:/usr/sbin:/sbin
+	}
+
+	environment = {
+		OSLogRateLimit => 64
+		PATH => /Users/testuser/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+		XPC_SERVICE_NAME => com.ynab-tools.dashboard
+	}
+
+	domain = gui/501 [100023]
+	asid = 100023
+	minimum runtime = 10
+	exit timeout = 5
+	runs = 1
+	pid = 20507
+	immediate reason = speculative
+	forks = 0
+	execs = 1
+	initialized = 1
+	trampolined = 1
+	started suspended = 0
+	proxy started suspended = 0
+	checked allocations = 0 (queried = 1)
+	checked allocations reason = no host
+	checked allocations flags = 0x0
+	last exit code = (never exited)
+
+	resource coalition = {
+		ID = 15485
+		type = resource
+		state = active
+		active count = 1
+		name = com.ynab-tools.dashboard
+	}
+
+	jetsam coalition = {
+		ID = 15486
+		type = jetsam
+		state = active
+		active count = 1
+		name = com.ynab-tools.dashboard
+	}
+
+	spawn type = daemon (3)
+	jetsam priority = 40
+	jetsam memory limit (active) = (unlimited)
+	jetsam memory limit (inactive) = (unlimited)
+	jetsamproperties category = daemon
+	jetsam thread limit = 32
+	cpumon = default
+
+	properties = keepalive | runatload | inferred program
+}

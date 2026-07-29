@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Semantic and keyword search over an Obsidian vault via MCP",
+  "mcpServers": "./.mcp.json",
+  "name": "obsidian-search-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.7"
+}

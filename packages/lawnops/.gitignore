@@ -1,0 +1,14 @@
+.env
+config.yaml
+.cache/
+__pycache__/
+*.pyc
+*.db
+*.egg-info/
+dist/
+build/
+!CLAUDE.md
+
+# Exported irrigation/controller state is operational home data, never commit it
+snapshots/
+irrigation_state.yaml

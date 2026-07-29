@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "YNAB budget data sync, payee management, and financial analysis",
+  "mcpServers": "./.mcp.json",
+  "name": "ynab-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "1.0.381"
+}

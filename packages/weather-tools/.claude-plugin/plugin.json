@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Historical weather data via Open-Meteo API",
+  "mcpServers": "./.mcp.json",
+  "name": "weather-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.5"
+}

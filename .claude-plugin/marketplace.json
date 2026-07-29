@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "description": "Personal MCP servers by Larry Smith Jr.",
+    "homepage": "https://github.com/mrlesmithjr/mcp"
+  },
+  "name": "mrlesmithjr-mcp",
+  "owner": {
+    "name": "Larry Smith Jr."
+  },
+  "plugins": [
+    {
+      "description": "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit",
+      "name": "apple-eventkit-tools",
+      "source": "./packages/apple-eventkit-tools",
+      "version": "0.2.3"
+    },
+    {
+      "description": "Contacts MCP server: read and write contacts via the Google People API",
+      "name": "contacts-tools",
+      "source": "./packages/contacts-tools",
+      "version": "0.2.2"
+    },
+    {
+      "description": "Flight price tracker CLI: monitor fares over time, spot patterns, and find the best time to buy",
+      "name": "flightops",
+      "source": "./packages/flightops",
+      "version": "0.1.6"
+    },
+    {
+      "description": "Home maintenance operations CLI: recurring tasks, pest control, service providers, and cost tracking",
+      "name": "homeops",
+      "source": "./packages/homeops",
+      "version": "0.1.22"
+    },
+    {
+      "description": "iMessage MCP server: read chats from chat.db, send via AppleScript",
+      "name": "imessage-tools",
+      "source": "./packages/imessage-tools",
+      "version": "0.1.8"
+    },
+    {
+      "description": "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart",
+      "name": "launchd-tools",
+      "source": "./packages/launchd-tools",
+      "version": "0.1.3"
+    },
+    {
+      "description": "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management",
+      "name": "lawnops",
+      "source": "./packages/lawnops",
+      "version": "1.0.43"
+    },
+    {
+      "description": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge",
+      "name": "mail-tools",
+      "source": "./packages/mail-tools",
+      "version": "0.1.34"
+    },
+    {
+      "description": "NextDNS operations: analytics, blocking stats, device activity, profile management",
+      "name": "nextdns-tools",
+      "source": "./packages/nextdns-tools",
+      "version": "0.1.12"
+    },
+    {
+      "description": "Semantic and keyword search over an Obsidian vault via MCP",
+      "name": "obsidian-search-tools",
+      "source": "./packages/obsidian-search-tools",
+      "version": "0.1.7"
+    },
+    {
+      "description": "Google Sheets MCP server: read and write spreadsheets via the Sheets API",
+      "name": "sheets-tools",
+      "source": "./packages/sheets-tools",
+      "version": "0.2.2"
+    },
+    {
+      "description": "UniFi network operations: device inventory, client monitoring, VLAN management, and security status",
+      "name": "unifi-tools",
+      "source": "./packages/unifi-tools",
+      "version": "0.1.26"
+    },
+    {
+      "description": "Historical weather data via Open-Meteo API",
+      "name": "weather-tools",
+      "source": "./packages/weather-tools",
+      "version": "0.1.5"
+    },
+    {
+      "description": "YNAB budget data sync, payee management, and financial analysis",
+      "name": "ynab-tools",
+      "source": "./packages/ynab-tools",
+      "version": "1.0.381"
+    }
+  ]
+}

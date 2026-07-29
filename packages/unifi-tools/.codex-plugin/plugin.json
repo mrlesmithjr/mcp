@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "UniFi network operations: device inventory, client monitoring, VLAN management, and security status",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Developer Tools",
+    "defaultPrompt": [
+      "Show connected clients and current WAN status."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "UniFi Tools",
+    "longDescription": "UniFi network operations: device inventory, client monitoring, VLAN management, and security status",
+    "shortDescription": "UniFi network operations: device inventory, client monitoring, VLAN management, and security status"
+  },
+  "mcpServers": {
+    "unifi-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "unifi-tools",
+  "version": "0.1.26"
+}

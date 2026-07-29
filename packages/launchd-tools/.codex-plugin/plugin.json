@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Developer Tools",
+    "defaultPrompt": [
+      "Give me a one-line health rollup of my LaunchAgents."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "LaunchD Tools",
+    "longDescription": "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart",
+    "shortDescription": "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart"
+  },
+  "mcpServers": {
+    "launchd-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "launchd-tools",
+  "version": "0.1.3"
+}

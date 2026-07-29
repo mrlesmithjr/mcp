@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-flightops"
+version = "0.1.6"
+description = "Flight price tracker CLI: monitor fares over time, spot patterns, and find the best time to buy"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Larry Smith Jr" },
+]
+keywords = ["flights", "travel", "price-tracking", "google-flights"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "fast-flights>=3.0rc0",
+    "mcp",
+]
+
+[project.scripts]
+flightops = "flightops.cli:main"
+flightops-mcp = "flightops.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["flightops*"]
+
+[tool.bumpversion]
+current_version = "0.1.2"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "flightops/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'

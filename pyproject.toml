@@ -1,0 +1,33 @@
+[project]
+name = "mcp-workspace"
+version = "0.0.0"
+# Virtual workspace root: no package, no distribution. This file only configures
+# the uv workspace and shared tooling (ruff, pytest).
+requires-python = ">=3.11"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+mrlesmithjr-mcp-common = { workspace = true }
+mrlesmithjr-mcp-apple-eventkit-tools = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]

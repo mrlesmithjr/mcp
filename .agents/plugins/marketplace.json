@@ -1,0 +1,176 @@
+{
+  "interface": {
+    "displayName": "Larry's MCP Tools"
+  },
+  "name": "mrlesmithjr-mcp",
+  "plugins": [
+    {
+      "category": "Productivity",
+      "name": "apple-eventkit-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/apple-eventkit-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "contacts-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/contacts-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Travel",
+      "name": "flightops",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/flightops",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Business & Operations",
+      "name": "homeops",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/homeops",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Communication",
+      "name": "imessage-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/imessage-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Developer Tools",
+      "name": "launchd-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/launchd-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Business & Operations",
+      "name": "lawnops",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/lawnops",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Communication",
+      "name": "mail-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/mail-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Security",
+      "name": "nextdns-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/nextdns-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "obsidian-search-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/obsidian-search-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Productivity",
+      "name": "sheets-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/sheets-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Developer Tools",
+      "name": "unifi-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/unifi-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Data & Analytics",
+      "name": "weather-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/weather-tools",
+        "source": "local"
+      }
+    },
+    {
+      "category": "Finance",
+      "name": "ynab-tools",
+      "policy": {
+        "authentication": "ON_INSTALL",
+        "installation": "AVAILABLE"
+      },
+      "source": {
+        "path": "./packages/ynab-tools",
+        "source": "local"
+      }
+    }
+  ]
+}

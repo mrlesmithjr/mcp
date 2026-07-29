@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "UniFi network operations: device inventory, client monitoring, VLAN management, and security status",
+  "mcpServers": "./.mcp.json",
+  "name": "unifi-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.26"
+}

@@ -1,0 +1,42 @@
+# HomeOps Configuration
+
+# Apple Reminders (syncs to iPhone via iCloud)
+reminders:
+  list: "Personal"
+  default_time: "10:00"
+
+# SQLite database
+database:
+  path: "~/.local/share/homeops/homeops.db"
+
+# Valid categories (for validation and reports)
+categories:
+  tasks:
+    - hvac
+    - plumbing
+    - gutters
+    - pest
+    - electrical
+    - exterior
+    - interior
+    - safety
+    - appliance
+  providers:
+    - hvac
+    - gutters
+    - plumbing
+    - electrical
+    - pest
+    - general
+    - generator
+    - lighting
+    - radon
+  costs:
+    - hvac
+    - gutters
+    - pest
+    - plumbing
+    - electrical
+    - repair
+    - supplies
+    - service

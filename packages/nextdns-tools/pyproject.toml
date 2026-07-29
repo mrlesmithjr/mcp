@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-nextdns-tools"
+version = "0.1.12"
+description = "NextDNS operations: analytics, blocking stats, device activity, profile management"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Larry Smith Jr" },
+]
+keywords = ["nextdns", "dns", "privacy", "ad-blocking", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Topic :: Home Automation",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "requests>=2.28.0",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+
+[project.scripts]
+nextdns-tools = "nextdns.cli:main"
+nextdns-mcp = "nextdns.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["nextdns*"]
+
+[tool.bumpversion]
+current_version = "0.1.6"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

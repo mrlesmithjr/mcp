@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-launchd-tools"
+version = "0.1.3"
+description = "Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [{name = "Larry Smith Jr", email = "mrlesmithjr@gmail.com"}]
+keywords = ["mcp", "claude", "ai", "launchd", "macos"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "mcp>=1.0",
+    "mrlesmithjr-mcp-common>=0.1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/mrlesmithjr/mcp"
+Repository = "https://github.com/mrlesmithjr/mcp"
+Issues = "https://github.com/mrlesmithjr/mcp/issues"
+
+[project.scripts]
+launchd-tools-mcp = "launchd_tools.mcp_server:main"
+launchd-tools = "launchd_tools.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["launchd_tools*"]
+
+[tool.bumpversion]
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

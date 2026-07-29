@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Business & Operations",
+    "defaultPrompt": [
+      "What's the spray advisory for today based on soil temp and weather?"
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "LawnOps",
+    "longDescription": "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management",
+    "shortDescription": "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management"
+  },
+  "mcpServers": {
+    "lawnops": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "lawnops",
+  "version": "1.0.43"
+}

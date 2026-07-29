@@ -1,0 +1,30 @@
+{
+  "description": "Payee correction rules. Copy to payee_rules.json and populate using 'ynab payee audit' output.",
+  "canonical_payees": {
+    "Amazon": {"category": "Shopping"},
+    "Walmart": {"category": "Groceries"},
+    "Netflix": {"category": "Subscriptions (Personal)"},
+    "Shell": {"category": "Auto: Fuel"}
+  },
+  "rules": [
+    {
+      "import_pattern": "^AMZN\\*.*",
+      "correct_payee": "Amazon",
+      "correct_category": "Shopping"
+    },
+    {
+      "import_pattern": "^WAL-MART.*",
+      "correct_payee": "Walmart",
+      "correct_category": "Groceries"
+    },
+    {
+      "import_pattern": "^NETFLIX\\.COM.*",
+      "correct_payee": "Netflix"
+    },
+    {
+      "import_pattern": "^SHELL OIL.*",
+      "correct_payee": "Shell",
+      "correct_category": "Auto: Fuel"
+    }
+  ]
+}

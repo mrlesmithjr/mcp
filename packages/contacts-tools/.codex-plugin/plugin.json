@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Contacts MCP server: read and write contacts via the Google People API",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "defaultPrompt": [
+      "Find duplicate contacts and merge them."
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Contacts Tools",
+    "longDescription": "Contacts MCP server: read and write contacts via the Google People API",
+    "shortDescription": "Contacts MCP server: read and write contacts via the Google People API"
+  },
+  "mcpServers": {
+    "contacts-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "contacts-tools",
+  "version": "0.2.2"
+}

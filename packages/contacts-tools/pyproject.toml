@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mrlesmithjr-mcp-contacts-tools"
+version = "0.2.2"
+description = "Contacts MCP server: read and write contacts via the Google People API"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+authors = [
+    { name = "Larry Smith Jr" },
+]
+keywords = ["apple-contacts", "address-book", "macos", "cncontactstore", "pyobjc", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications",
+]
+dependencies = [
+    "mrlesmithjr-mcp-common>=0.1.2",
+    "pyobjc-framework-Contacts>=10.0",
+    "mcp>=1.0",
+    "prompt-security-utils>=1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+contacts-mcp = "contacts_tools.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["contacts_tools*"]
+
+[project.urls]
+Homepage = "https://github.com/mrlesmithjr/contacts-tools"
+Repository = "https://github.com/mrlesmithjr/contacts-tools"
+Issues = "https://github.com/mrlesmithjr/contacts-tools/issues"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.bumpversion]
+current_version = "0.2.2"
+commit = false
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

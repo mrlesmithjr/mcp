@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Repo-local pre-commit for mrlesmithjr/mcp.
+#
+# Setting a repo-local core.hooksPath (for the pre-push main guard) overrides
+# the global hooksPath entirely, so this wrapper delegates to the global
+# pre-commit to keep it running for this repo.
+set -euo pipefail
+
+GLOBAL_HOOKS="$(git config --global --get core.hooksPath || true)"
+if [ -n "${GLOBAL_HOOKS}" ] && [ -x "${GLOBAL_HOOKS}/pre-commit" ]; then
+    exec "${GLOBAL_HOOKS}/pre-commit" "$@"
+fi
+exit 0

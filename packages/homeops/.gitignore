@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
+config.yaml
+.env
+homeops.db
+*.db
+!CLAUDE.md

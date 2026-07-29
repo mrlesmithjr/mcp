@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Flight price tracker CLI: monitor fares over time, spot patterns, and find the best time to buy",
+  "mcpServers": "./.mcp.json",
+  "name": "flightops",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.6"
+}

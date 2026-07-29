@@ -1,0 +1,10 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge",
+  "mcpServers": "./.mcp.json",
+  "name": "mail-tools",
+  "repository": "https://github.com/mrlesmithjr/mcp",
+  "version": "0.1.34"
+}

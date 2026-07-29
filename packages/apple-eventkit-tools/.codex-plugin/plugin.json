@@ -1,0 +1,32 @@
+{
+  "author": {
+    "name": "Larry Smith Jr."
+  },
+  "description": "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit",
+  "interface": {
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "category": "Productivity",
+    "defaultPrompt": [
+      "What's on my agenda today across all calendars?"
+    ],
+    "developerName": "Larry Smith Jr.",
+    "displayName": "Apple EventKit Tools",
+    "longDescription": "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit",
+    "shortDescription": "Apple Calendar and Reminders MCP server: Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit"
+  },
+  "mcpServers": {
+    "apple-eventkit-tools": {
+      "args": [
+        "./hooks/run_server.sh"
+      ],
+      "command": "bash",
+      "cwd": "."
+    }
+  },
+  "name": "apple-eventkit-tools",
+  "version": "0.2.3"
+}
