@@ -375,33 +375,62 @@ def _build_lookup(items: list[dict], key: str = "id") -> dict[str, dict]:
 
 
 def backfill_category_group_names(conn: sqlite3.Connection, client: YNABClient) -> tuple[int, int]:
-    """Backfill category_group_name from /categories, and reconcile deleted/merged
-    categories that YNAB stops returning without a deleted=true tombstone (refs #134).
+    """Reconcile group id, group name, and category name from /categories (authoritative
+    per category id), and reconcile deleted/merged categories that YNAB stops returning
+    without a deleted=true tombstone (refs #134, #35).
+
+    Group membership and category name are current attributes of the category, not
+    per-month, so a moved or renamed category is corrected across all its month rows --
+    matching what `--full` already does by rewriting every month from scratch.
 
     Returns (group_names_updated, categories_marked_deleted).
     """
     data = client.get_categories()
     groups = data["category_groups"]
 
-    # Build group_id -> group_name mapping, and the authoritative id -> (hidden,
-    # deleted) status for every category YNAB currently knows about.
-    group_name_by_id: dict[str, str] = {}
+    # Build the authoritative id -> (group_id, group_name, cat_name) mapping for every
+    # non-deleted category YNAB currently knows about, plus id -> (hidden, deleted)
+    # status for every category regardless of deleted state. Deleted categories are
+    # excluded from live_category (their name/group is irrelevant once gone) but still
+    # recorded in live_status so the hidden/deleted reconciliation pass below can apply
+    # an explicit deleted=true tombstone for them.
+    # cat_name is Optional[str]: the real /categories endpoint always includes it, but
+    # it is kept optional here so a caller/response without a "name" field (e.g. an
+    # older test fixture) degrades to reconciling group id/name only, rather than
+    # overwriting the local name with a missing value.
+    live_category: dict[str, tuple[str, str, str | None]] = {}
     live_status: dict[str, tuple[bool, bool]] = {}
     for group in groups:
-        group_name_by_id[group["id"]] = group["name"]
         for cat in group.get("categories", []):
-            live_status[cat["id"]] = (bool(cat.get("hidden", False)), bool(cat.get("deleted", False)))
+            deleted = bool(cat.get("deleted", False))
+            live_status[cat["id"]] = (bool(cat.get("hidden", False)), deleted)
+            if not deleted:
+                live_category[cat["id"]] = (group["id"], group["name"], cat.get("name"))
 
-    # Update budget_categories where category_group_name is NULL or wrong
+    # Reconcile group id, group name, and (when known) name for every live category,
+    # keyed on the category's own id so a move (new category_group_id) or rename (new
+    # name) is corrected across all of that category's month rows, not just rows still
+    # matching the old group id.
     total_updated = 0
-    for group_id, group_name in group_name_by_id.items():
-        result = conn.execute(
-            """UPDATE budget_categories
-               SET category_group_name = ?
-               WHERE category_group_id = ?
-                 AND (category_group_name IS NULL OR category_group_name != ?)""",
-            (group_name, group_id, group_name),
-        )
+    for cat_id, (group_id, group_name, cat_name) in live_category.items():
+        if cat_name is not None:
+            result = conn.execute(
+                """UPDATE budget_categories
+                   SET category_group_id = ?, category_group_name = ?, name = ?
+                   WHERE id = ?
+                     AND (category_group_id != ? OR category_group_name IS NULL
+                          OR category_group_name != ? OR name != ?)""",
+                (group_id, group_name, cat_name, cat_id, group_id, group_name, cat_name),
+            )
+        else:
+            result = conn.execute(
+                """UPDATE budget_categories
+                   SET category_group_id = ?, category_group_name = ?
+                   WHERE id = ?
+                     AND (category_group_id != ? OR category_group_name IS NULL
+                          OR category_group_name != ?)""",
+                (group_id, group_name, cat_id, group_id, group_name),
+            )
         total_updated += result.rowcount
 
     # Apply explicit hidden/deleted flags for categories YNAB still returns (covers

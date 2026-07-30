@@ -750,8 +750,13 @@ class TestBackfillCategoryGroupNamesReconciliation:
         group_updated, _ = backfill_category_group_names(conn, client)
         assert group_updated == 1
 
-        row = conn.execute("SELECT category_group_name FROM budget_categories WHERE id = ?", ("cat-1",)).fetchone()
+        row = conn.execute(
+            "SELECT category_group_name, name FROM budget_categories WHERE id = ?", ("cat-1",)
+        ).fetchone()
         assert row["category_group_name"] == "Everyday"
+        # A /categories payload without a "name" key must not null out or corrupt the
+        # local category name -- the reconciliation omits name from the SET clause.
+        assert row["name"] == "Groceries"
         conn.close()
 
     def test_previously_deleted_category_reappearing_flips_back_to_alive(self, tmp_path):
@@ -875,4 +880,104 @@ class TestBackfillCategoryGroupNamesReconciliation:
 
         row = conn.execute("SELECT deleted FROM budget_categories WHERE id = ?", ("cat-9",)).fetchone()
         assert row["deleted"] == 1
+        conn.close()
+
+    def test_category_moved_to_new_group_is_reconciled(self, tmp_path):
+        """Regression for issue #35: a category dragged to a new parent group keeps its
+        id but points at a new category_group_id. Matching by old group id alone never
+        corrects it, so reconciliation must be keyed on the category's own id."""
+        conn = _setup_test_db(tmp_path)
+        _insert_budget_category(
+            conn, "cat-1", "2026-06-01", name="Streaming", group_id="grp-old", group_name="Old Group"
+        )
+        _insert_budget_category(
+            conn, "cat-1", "2026-07-01", name="Streaming", group_id="grp-old", group_name="Old Group"
+        )
+
+        client = _make_categories_client(
+            [
+                {
+                    "id": "grp-new",
+                    "name": "New Group",
+                    "categories": [{"id": "cat-1", "name": "Streaming", "hidden": False, "deleted": False}],
+                }
+            ]
+        )
+
+        group_updated, _ = backfill_category_group_names(conn, client)
+        assert group_updated == 2
+
+        rows = conn.execute(
+            "SELECT category_group_id, category_group_name FROM budget_categories WHERE id = ?", ("cat-1",)
+        ).fetchall()
+        assert all(r["category_group_id"] == "grp-new" for r in rows)
+        assert all(r["category_group_name"] == "New Group" for r in rows)
+        conn.close()
+
+    def test_category_renamed_is_reconciled(self, tmp_path):
+        """Regression for issue #35: a category renamed in YNAB keeps its id and group,
+        but the local `name` column was never touched by the old group-id-keyed backfill.
+        All month rows for that category id must pick up the new name."""
+        conn = _setup_test_db(tmp_path)
+        _insert_budget_category(conn, "cat-1", "2026-06-01", name="Old Name", group_id="grp-1", group_name="Group")
+        _insert_budget_category(conn, "cat-1", "2026-07-01", name="Old Name", group_id="grp-1", group_name="Group")
+
+        client = _make_categories_client(
+            [
+                {
+                    "id": "grp-1",
+                    "name": "Group",
+                    "categories": [{"id": "cat-1", "name": "New Name", "hidden": False, "deleted": False}],
+                }
+            ]
+        )
+
+        group_updated, _ = backfill_category_group_names(conn, client)
+        assert group_updated == 2
+
+        rows = conn.execute("SELECT name FROM budget_categories WHERE id = ?", ("cat-1",)).fetchall()
+        assert all(r["name"] == "New Name" for r in rows)
+        conn.close()
+
+    def test_moved_and_renamed_category_reconciled_across_all_month_rows(self, tmp_path):
+        """Both a group move and a rename in the same sync must be applied together,
+        across every historical month row for that category id."""
+        conn = _setup_test_db(tmp_path)
+        for month in ("2026-05-01", "2026-06-01", "2026-07-01"):
+            _insert_budget_category(conn, "cat-1", month, name="Old Name", group_id="grp-old", group_name="Old Group")
+        # Unrelated category should be untouched.
+        _insert_budget_category(conn, "cat-2", "2026-07-01", name="Rent", group_id="grp-bills", group_name="Bills")
+
+        client = _make_categories_client(
+            [
+                {
+                    "id": "grp-new",
+                    "name": "New Group",
+                    "categories": [{"id": "cat-1", "name": "New Name", "hidden": False, "deleted": False}],
+                },
+                {
+                    "id": "grp-bills",
+                    "name": "Bills",
+                    "categories": [{"id": "cat-2", "name": "Rent", "hidden": False, "deleted": False}],
+                },
+            ]
+        )
+
+        group_updated, deleted_count = backfill_category_group_names(conn, client)
+        assert group_updated == 3
+        assert deleted_count == 0
+
+        rows = conn.execute(
+            "SELECT category_group_id, category_group_name, name FROM budget_categories WHERE id = ?", ("cat-1",)
+        ).fetchall()
+        for r in rows:
+            assert r["category_group_id"] == "grp-new"
+            assert r["category_group_name"] == "New Group"
+            assert r["name"] == "New Name"
+
+        unrelated = conn.execute(
+            "SELECT category_group_id, name FROM budget_categories WHERE id = ?", ("cat-2",)
+        ).fetchone()
+        assert unrelated["category_group_id"] == "grp-bills"
+        assert unrelated["name"] == "Rent"
         conn.close()
