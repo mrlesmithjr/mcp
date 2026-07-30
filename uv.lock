@@ -1600,7 +1600,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mrlesmithjr-mcp-ynab-tools"
-version = "1.0.385"
+version = "1.0.386"
 source = { editable = "packages/ynab-tools" }
 dependencies = [
     { name = "mcp" },

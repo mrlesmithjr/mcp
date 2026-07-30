@@ -23,7 +23,7 @@ Fourteen tools ship as marketplace plugins. Two packages support them and are no
 | `sheets-tools` | 0.2.3 | Google Sheets read/write via the Sheets API v4, plus spreadsheet discovery and sharing via Drive |
 | `unifi-tools` | 0.1.27 | UniFi network: devices, clients, VLANs, firewall |
 | `weather-tools` | 0.1.6 | Historical weather data via Open-Meteo |
-| `ynab-tools` | 1.0.385 | YNAB budget sync, payee cleanup, financial analysis |
+| `ynab-tools` | 1.0.386 | YNAB budget sync, payee cleanup, financial analysis |
 | `mcp-common` | (library) | Shared helpers: logging, layered config, paths, errors. Not a plugin. |
 | `homeops-coordinator` | (daemon) | LaunchAgent that coordinates home ops across tools. Not a plugin. |
 
