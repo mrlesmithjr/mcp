@@ -85,13 +85,13 @@ def _build_two_pot(conn: sqlite3.Connection) -> dict[str, Any]:
             delta = e["delta"]
             if _is_excluded(group or "", name, excluded, excluded_cats):
                 continue
-            if _is_bonus_funded(name, group, bonus_groups, bonus_cats):
-                dest = correct_map
-            else:
-                dest = backwards_map
-            if name not in dest:
-                dest[name] = {"category_name": name, "group": group, "delta": 0.0}
-            dest[name]["delta"] = round(dest[name]["delta"] + delta, 2)
+            dest = correct_map if _is_bonus_funded(name, group, bonus_groups, bonus_cats) else backwards_map
+            # Movements into now-deleted categories carry no name; group them under a
+            # placeholder so the row renders with a label instead of blank. refs #33
+            key = name or "(unknown category)"
+            if key not in dest:
+                dest[key] = {"category_name": key, "group": group, "delta": 0.0}
+            dest[key]["delta"] = round(dest[key]["delta"] + delta, 2)
 
         correct = sorted(correct_map.values(), key=lambda x: -x["delta"])
         backwards = sorted(backwards_map.values(), key=lambda x: -x["delta"])
