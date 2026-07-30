@@ -30,10 +30,10 @@ def _get_breakdown_config() -> tuple[set[str], set[str], float, int, set[str], s
     return groups, cats, regular_pay, 2, excluded, excluded_cats
 
 
-def _is_bonus_funded(name: str, group: str | None, bonus_groups: set[str], bonus_cats: set[str]) -> bool:
-    if name in bonus_cats:
+def _is_bonus_funded(name: str | None, group: str | None, bonus_groups: set[str], bonus_cats: set[str]) -> bool:
+    if name and name in bonus_cats:
         return True
-    name_lower = name.lower()
+    name_lower = (name or "").lower()
     group_lower = (group or "").lower()
     for bg in bonus_groups:
         bg_lower = bg.lower()
@@ -71,7 +71,7 @@ def _get_3mo_avgs(conn: sqlite3.Connection, month: str) -> dict[str, float]:
     return {row["name"]: row["avg_spend"] or 0.0 for row in rows}
 
 
-def _is_excluded(group: str, name: str, excluded_groups: set[str], excluded_cats: set[str]) -> bool:
+def _is_excluded(group: str, name: str | None, excluded_groups: set[str], excluded_cats: set[str]) -> bool:
     if name in excluded_cats:
         return True
     group_lower = group.lower()

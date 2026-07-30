@@ -252,10 +252,13 @@ def run_two_pot_report(months: int = 3, month: str | None = None) -> None:
                 and not _is_bonus_funded(e["category_name"], e["category_group"], bonus_groups, bonus_cats)
             ]
 
-            # Aggregate by category
+            # Aggregate by category. Movements into now-deleted categories carry no
+            # name (to_category_name NULL, no budget_categories row to join); group
+            # them under a placeholder so display never formats a None. refs #33
             backwards_map: dict[str, float] = {}
             for e in backwards_entries:
-                backwards_map[e["category_name"]] = round(backwards_map.get(e["category_name"], 0.0) + e["delta"], 2)
+                key = e["category_name"] or "(unknown category)"
+                backwards_map[key] = round(backwards_map.get(key, 0.0) + e["delta"], 2)
 
             workflow_gap = round(sum(backwards_map.values()), 2)
             date_str = bm["bonus_paycheck_date"]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-homeops"
-version = "0.1.23"
+version = "0.1.24"
 description = "Home maintenance operations CLI: recurring tasks, pest control, service providers, and cost tracking"
 readme = "README.md"
 license = "MIT"

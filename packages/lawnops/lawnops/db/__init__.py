@@ -11,7 +11,7 @@ from lawnops.db.irrigation_analytics import (
     zone_analysis,
 )
 from lawnops.db.irrigation_log import backfill_irrigation, log_irrigation_run, sync_irrigation
-from lawnops.db.mowing import add_mowing, delete_mowing, get_mowing_summary
+from lawnops.db.mowing import add_mowing, delete_mowing, get_mowing_gap, get_mowing_summary
 from lawnops.db.observations import log_daily_observations
 from lawnops.db.obsidian_import import import_from_obsidian
 from lawnops.db.pollen import get_pollen_history, log_pollen
@@ -49,6 +49,7 @@ __all__ = [
     "add_purchase",
     "delete_purchase",
     "add_mowing",
+    "get_mowing_gap",
     "get_mowing_summary",
     "delete_mowing",
     "add_equipment",
