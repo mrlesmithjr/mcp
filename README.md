@@ -31,6 +31,8 @@ Each package has its own README with setup, tools, and usage. `mcp-common` and `
 
 ## Installing a tool
 
+> The same tool can run in three places, Claude Code, regular Claude Desktop chat, and Cowork, each set up differently and reading its own MCP registry. The steps below cover the Claude Code plugin path; for the full per-surface guide (regular Desktop chat, Cowork, the `<tool>-mcp` binary-name table, and troubleshooting) see [docs/where-tools-run.md](docs/where-tools-run.md).
+
 Each `packages/<tool>/` directory is the plugin source. When you install a plugin, Claude Code clones that directory into its plugin cache. On each session start, the plugin's `hooks/install_deps.sh` builds a persistent virtual environment (surviving plugin updates) and symlinks the tool's CLIs onto your `PATH`. There is no separate `pip install` step.
 
 ```bash

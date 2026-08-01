@@ -133,7 +133,7 @@ plugin schema validator. Verified end to end on codex-cli 0.144.6: a live
 
 ### Which install path to use
 
-Three consumption paths, and they do not overlap. Picking the wrong one is the most
+These consumption paths do not overlap. Picking the wrong one is the most
 common source of confusion, because two of them can silently fight over
 `~/.local/bin/<cli>`.
 
@@ -141,7 +141,13 @@ common source of confusion, because two of them can silently fight over
 |-----------|------|-----|
 | **This repo is checked out** (dev machine) | Workspace venv | `uv sync --all-packages`, then `uv run python dev/register_dev.py` to register `<tool>-dev` servers pointing at `.venv/bin/` |
 | **No checkout** (consumer machine) | Marketplace plugin | `/plugin marketplace add mrlesmithjr/mcp` + `/plugin install <slug>@mrlesmithjr-mcp`; the SessionStart hook self-bootstraps the venv, CLIs, and LaunchAgents |
-| **Claude Desktop** | Neither | Desktop has no plugin/marketplace support and does not read Claude Code's MCP config. Point `claude_desktop_config.json` at an absolute path to the `<tool>-mcp` binary |
+| **Claude Desktop, regular chat** | Absolute-path config | Regular Desktop chat does not read Claude Code's MCP config. Point `claude_desktop_config.json` (Settings -> Developer -> Local MCP servers -> Edit Config) at an absolute path to the `<tool>-mcp` binary; on a dev box, the `.venv` one |
+| **Claude Desktop, Cowork** | `@inline` plugin | Cowork (Desktop's agent mode) has its own plugin system (Settings -> Plugins), separate from regular chat. Installing there builds a frozen clone that needs a manual Update after each release |
+
+Claude Code, regular Desktop chat, and Cowork each read a **different** MCP registry and are
+set up independently, so a tool installed in one is not available in the others. Full
+per-surface setup, the (non-guessable) `<tool>-mcp` binary-name table, and troubleshooting are
+in [`docs/where-tools-run.md`](docs/where-tools-run.md).
 
 Do **not** install the marketplace plugin on a dev machine. `dev/register_dev.py`
 states the rule directly: marketplace plugins are consumer-only. A plugin install
