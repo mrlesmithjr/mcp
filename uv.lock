@@ -1324,7 +1324,7 @@ requires-dist = [
 
 [[package]]
 name = "mrlesmithjr-mcp-homeops"
-version = "0.1.24"
+version = "0.1.25"
 source = { editable = "packages/homeops" }
 dependencies = [
     { name = "mcp" },
@@ -1405,7 +1405,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mrlesmithjr-mcp-lawnops"
-version = "1.0.45"
+version = "1.0.46"
 source = { editable = "packages/lawnops" }
 dependencies = [
     { name = "beautifulsoup4" },

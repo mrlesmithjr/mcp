@@ -91,13 +91,15 @@ The SessionStart hook (`hooks/install_deps.sh`) runs on each session start. It:
    loaded with and a plist rewritten in place would otherwise keep running under
    the stale in-memory `ProgramArguments` (issue #151).
 
-   Only ship a plist here for an *unattended scheduled job* (homeops, lawnops,
-   obsidian-search-tools). A persistent user-facing service must not be
-   plugin-installed: this step runs `launchctl load -w` on every rebuild, so it
-   would silently resurrect a service the user had deliberately stopped. The
-   ynab dashboard is the worked example -- it is opt-in via
-   `ynab dashboard install`, which owns writing, loading, and removing its own
-   plist. Two owners of one label means uninstall does not stick.
+   Only ship a plist here for an *unattended scheduled job* (obsidian-search-tools
+   is the reference example; homeops and lawnops LaunchAgents are maintainer-home-
+   specific and are not shipped from the plugin, issue #37). A persistent
+   user-facing service must not be plugin-installed: this step runs
+   `launchctl load -w` on every rebuild, so it would silently resurrect a
+   service the user had deliberately stopped. The ynab dashboard is the
+   worked example -- it is opt-in via `ynab dashboard install`, which owns
+   writing, loading, and removing its own plist. Two owners of one label
+   means uninstall does not stick.
 
 This self-install means a nuclear rebuild needs no monorepo clone: installing the
 plugins from the marketplace restores the venvs, the CLIs on PATH, and the

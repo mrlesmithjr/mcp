@@ -1,31 +1,39 @@
 #!/usr/bin/env bash
-# Install the personal LaunchAgents for the mrlesmithjr/mcp daemons and
-# scheduled jobs. Idempotent: re-running re-syncs the runtime scripts,
-# re-renders the plists, and reloads each agent.
+# Install the personal LaunchAgents for the mrlesmithjr/mcp scheduled jobs.
+# Idempotent: re-running re-syncs the runtime scripts, re-renders the
+# plists, and reloads each agent.
 #
 # Plists are committed as templates using the literal __HOME__ placeholder so
 # the repo stays free of absolute user paths. This script substitutes $HOME at
 # install time (launchd does not expand ~ or variables in ProgramArguments).
 #
-# Direct-binary agents run from the plugin venv at ${CLAUDE_PLUGIN_DATA}/venv,
-# which persists across plugin updates, and need no runtime script at all --
-# their plists call the venv binary + subcommand directly. Any remaining
-# script-driven agents call `claude -p` headlessly and need their runtime .sh
-# copied into ~/.local/share/<tool>/. A package with no script-driven agents
-# left has no launchagents/scripts/ dir (or an empty one); install_scripts()
-# below must tolerate that.
+# Only ship a launchagents/ dir under a package for an unattended scheduled
+# job (see mcp/CLAUDE.md) -- a persistent user-facing service must not be
+# plugin-installed. Direct-binary agents run from the plugin venv at
+# ${CLAUDE_PLUGIN_DATA}/venv, which persists across plugin updates, and need
+# no runtime script at all -- their plists call the venv binary + subcommand
+# directly. Any script-driven agents call the tool's CLI via
+# ~/.local/bin/<tool> and need their runtime .sh copied into
+# ~/.local/share/<tool>/. A package with no script-driven agents has no
+# launchagents/scripts/ dir (or an empty one); install_scripts() below must
+# tolerate that.
+#
+# Packages are discovered dynamically by scanning packages/*/launchagents/ --
+# do not hardcode package names here.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LA_DIR="$HOME/Library/LaunchAgents"
 mkdir -p "$LA_DIR"
 
+LOADED_COUNT=0
+
 # Copy a package's runtime scripts into the tool data dir referenced by its plists.
 install_scripts() {
-  local pkg="$1" tool="$2"
+  local pkg="$1"
   local src="$REPO_ROOT/packages/$pkg/launchagents/scripts"
   [[ -d "$src" ]] || return 0
-  local dst="$HOME/.local/share/$tool"
+  local dst="$HOME/.local/share/$pkg"
   mkdir -p "$dst"
   local s
   for s in "$src"/*.sh; do
@@ -44,26 +52,17 @@ render_and_load() {
   launchctl unload -w "$target" 2>/dev/null || true
   launchctl load -w "$target"
   echo "loaded $label"
+  LOADED_COUNT=$((LOADED_COUNT + 1))
 }
 
-install_scripts homeops homeops
-install_scripts lawnops lawnops
-
-# Warn (do not fail) if a venv binary is missing: the plugin is not installed yet
-# or its venv has not built. The agent loads but its first run will no-op.
-for vb in \
-  "$HOME/.claude/plugins/data/homeops-mrlesmithjr-mcp/venv/bin/homeops" \
-  "$HOME/.claude/plugins/data/lawnops-mrlesmithjr-mcp/venv/bin/lawnops"; do
-  [[ -x "$vb" ]] || echo "WARN: missing $vb (install the plugin and let its venv build first)"
+for pkg_dir in "$REPO_ROOT"/packages/*/launchagents; do
+  [[ -d "$pkg_dir" ]] || continue
+  pkg="$(basename "$(dirname "$pkg_dir")")"
+  install_scripts "$pkg"
+  for plist in "$pkg_dir"/*.plist; do
+    [[ -e "$plist" ]] || continue
+    render_and_load "$plist"
+  done
 done
 
-# ynab-tools is deliberately absent: the dashboard is a persistent user-facing
-# service, not a scheduled job, so it is opt-in via `ynab dashboard install`
-# rather than installed by the plugin. See packages/ynab-tools/docs/dashboard.md.
-for plist in \
-  "$REPO_ROOT"/packages/homeops/launchagents/*.plist \
-  "$REPO_ROOT"/packages/lawnops/launchagents/*.plist; do
-  render_and_load "$plist"
-done
-
-echo "Loaded $(launchctl list | grep -cE 'com\.(homeops|lawnops)\.') personal agents."
+echo "Loaded ${LOADED_COUNT} personal agent(s)."

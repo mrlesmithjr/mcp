@@ -23,10 +23,13 @@ logger = logging.getLogger(__name__)
 _session = None
 
 # A hung (not down, just unresponsive) Prometheus instance must fail fast
-# rather than block indefinitely - this runs both on-demand via the MCP tool
-# and hourly via the com.homeops.hvac-snapshot LaunchAgent (issue #70,
-# carried forward unchanged when the query target moved from Home Assistant
-# to Prometheus in issue #143).
+# rather than block indefinitely - this originally ran both on-demand via the
+# MCP tool and hourly via the com.homeops.hvac-snapshot LaunchAgent (issue
+# #70, carried forward unchanged when the query target moved from Home
+# Assistant to Prometheus in issue #143). The hvac-snapshot LaunchAgent was
+# removed from the shipped plugin in issue #37; that scheduled run now lives
+# in the maintainer's private provisioning, not this package. The MCP-tool
+# call path and its timeout/retry behavior are unchanged.
 REQUEST_TIMEOUT_SECONDS = 10
 MAX_RETRIES = 2
 RETRY_BACKOFF_SECONDS = 1
