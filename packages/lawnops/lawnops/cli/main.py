@@ -34,7 +34,7 @@ def main():
     subparsers.add_parser("advisory", help="Full report with pre-emergent recommendation")
     subparsers.add_parser("spray", help="Spray window check for next 48 hours")
     subparsers.add_parser("recommend", help="Fertilizer recommendation based on season and conditions")
-    subparsers.add_parser("bermuda-check", help="Check soil temp for Bermuda green-up, create a Reminder if ready")
+    subparsers.add_parser("bermuda-check", help="Report soil temp status for Bermuda green-up")
 
     # Pollen command
     pollen_parser = subparsers.add_parser("pollen", help="Current pollen count and spray impact")
@@ -121,7 +121,7 @@ def main():
 
     irr_sub.add_parser(
         "check",
-        help="Check irrigation budget/ET issues, create a reminder if action needed",
+        help="Report irrigation budget/ET issues",
     )
 
     # Database subcommand
@@ -679,11 +679,11 @@ def _handle_irrigation(args, config):
 
 
 def _cmd_irrigation_check(config):
-    """Deterministic irrigation check: reuses budget_status/et_recommendations to flag and dedup-remind (issue #146)."""
-    from datetime import date
-
-    from lawnops.reminders import create_reminder_if_missing
-
+    """Deterministic irrigation check: reuses budget_status/et_recommendations
+    to flag budget/ET issues (issue #146). Read-only report: prints the
+    findings (issue #39 - Apple Reminders creation removed, no delivery
+    channel left).
+    """
     result = db.evaluate_irrigation_check(config)
     budget_issue = result["budget_issue"]
     et_issue = result["et_issue"]
@@ -699,31 +699,21 @@ def _cmd_irrigation_check(config):
     else:
         summary = "ET reduction recommended"
 
-    notes_lines = []
+    lines = []
     if budget_issue:
-        notes_lines.append(
+        lines.append(
             f"Budget {budget_issue['budget_status']}: ${budget_issue['current_cost']:.2f} spent, "
             f"${budget_issue['projected_cost']:.2f} projected"
         )
         for rec in budget_issue.get("recommendations", []):
-            notes_lines.append(f"- {rec}")
+            lines.append(f"- {rec}")
     if et_issue:
         for item in et_issue:
-            notes_lines.append(item["detail"])
-    notes = "\n".join(notes_lines)
+            lines.append(item["detail"])
 
-    reminder_result = create_reminder_if_missing(
-        config,
-        title=f"Irrigation: action needed: {summary}",
-        search_query="Irrigation: action needed",
-        notes=notes,
-        due_date=date.today().isoformat(),
-        due_time="08:00",
-        priority=5,
-    )
-
-    status = "reminder created" if reminder_result["created"] else "reminder already pending"
-    print(f"Irrigation check: {summary} - {status}")
+    print(f"Irrigation check: {summary}")
+    for line in lines:
+        print(f"  {line}")
 
 
 _BERMUDA_CHECKLIST = """\
@@ -735,32 +725,18 @@ _BERMUDA_CHECKLIST = """\
 
 
 def _cmd_bermuda_check(current, config):
-    """Deterministic Bermuda green-up check: soil temp vs threshold, dedup-remind (issue #146)."""
-    from datetime import date
-
-    from lawnops.reminders import create_reminder_if_missing
-
+    """Deterministic Bermuda green-up check: soil temp vs threshold (issue
+    #146). Read-only report: prints the checklist when ready (issue #39 -
+    Apple Reminders creation removed, no delivery channel left).
+    """
     soil_temp = current["soil_temp"]
 
     if not advisory.bermuda_greenup_ready(soil_temp, config):
         print(f"Bermuda green-up check: not ready yet (soil temp {soil_temp:.1f}°F)")
         return
 
-    today = date.today().isoformat()
-    notes = f"Current soil temp: {soil_temp:.1f}°F\nDate: {today}\n\n{_BERMUDA_CHECKLIST}"
-
-    reminder_result = create_reminder_if_missing(
-        config,
-        title="Bermuda green-up: begin broadleaf weed spray schedule",
-        search_query="Bermuda green-up",
-        notes=notes,
-        due_date=today,
-        due_time="08:00",
-        priority=5,
-    )
-
-    status = "reminder created" if reminder_result["created"] else "reminder already pending"
-    print(f"Bermuda green-up check: ready (soil temp {soil_temp:.1f}°F) - {status}")
+    print(f"Bermuda green-up check: ready (soil temp {soil_temp:.1f}°F)")
+    print(_BERMUDA_CHECKLIST)
 
 
 def _cmd_configure():

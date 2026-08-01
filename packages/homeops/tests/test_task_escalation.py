@@ -1,12 +1,12 @@
 """Tests for task escalation (issue #146).
 
-evaluate_task_escalation() is DB-only (no EventKit/Reminders import), so
-it's tested here directly against a temp SQLite DB. The CLI's dedup call
-into homeops.reminders is tested separately with RemindersManager mocked.
+evaluate_task_escalation() is DB-only, so it's tested here directly against
+a temp SQLite DB. The CLI command's read-only report output is tested
+separately (issue #39 - Apple Reminders creation removed, so
+`homeops task escalate` now prints its findings instead).
 """
 
 from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
 
 import pytest
 from homeops.cli.main import _cmd_task_escalate
@@ -16,11 +16,10 @@ from homeops.db.tasks import add_task, evaluate_task_escalation
 
 @pytest.fixture()
 def tmp_config(tmp_path):
-    """Config pointing to a temp DB, plus the default reminders section."""
+    """Config pointing to a temp DB."""
     db_path = tmp_path / "homeops.db"
     return {
         "database": {"path": str(db_path)},
-        "reminders": {"list": "Personal", "default_time": "10:00"},
     }
 
 
@@ -81,49 +80,20 @@ class TestEvaluateTaskEscalation:
 
 
 class TestCmdTaskEscalate:
-    @patch("homeops.reminders.RemindersManager")
-    def test_creates_reminder_when_qualifying_tasks_found(self, mock_manager_cls, tmp_config, capsys):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = []
-        mock_manager.create_reminder.return_value = {"id": "new1"}
-        mock_manager_cls.return_value = mock_manager
-
+    def test_prints_report_when_qualifying_tasks_found(self, tmp_config, capsys):
         _add_overdue_task(tmp_config, "Check smoke detectors", "safety", 1)
 
         _cmd_task_escalate(tmp_config)
 
-        mock_manager.search_reminders.assert_called_once_with("overdue tasks need attention", list_name="Personal")
-        mock_manager.create_reminder.assert_called_once()
-        _, kwargs = mock_manager.create_reminder.call_args
-        assert kwargs["priority"] == 1
-        assert kwargs["due_time"] == "08:00"
-        assert "Check smoke detectors" in kwargs["notes"]
-
         out = capsys.readouterr().out
-        assert "reminder created" in out
+        assert "1 task qualify" in out
+        assert "Check smoke detectors" in out
+        assert "safety" in out
 
-    @patch("homeops.reminders.RemindersManager")
-    def test_reports_already_pending_when_reminder_exists(self, mock_manager_cls, tmp_config, capsys):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = [{"id": "abc123", "title": "HomeOps: overdue tasks"}]
-        mock_manager_cls.return_value = mock_manager
-
-        _add_overdue_task(tmp_config, "Check smoke detectors", "safety", 1)
-
-        _cmd_task_escalate(tmp_config)
-
-        mock_manager.create_reminder.assert_not_called()
-        out = capsys.readouterr().out
-        assert "reminder already pending" in out
-
-    @patch("homeops.reminders.RemindersManager")
-    def test_no_reminder_created_when_nothing_qualifies(self, mock_manager_cls, tmp_config, capsys):
-        mock_manager_cls.return_value = MagicMock()
-
+    def test_prints_no_qualifying_tasks(self, tmp_config, capsys):
         _add_overdue_task(tmp_config, "Change AC filter", "hvac", 5)
 
         _cmd_task_escalate(tmp_config)
 
-        mock_manager_cls.return_value.search_reminders.assert_not_called()
         out = capsys.readouterr().out
         assert "no qualifying tasks" in out

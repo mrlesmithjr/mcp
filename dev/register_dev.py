@@ -31,7 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PACKAGES_DIR = REPO_ROOT / "packages"
 VENV_BIN = REPO_ROOT / ".venv" / "bin"
 
-_EXCLUDED_PACKAGES = {"mrlesmithjr-mcp-common", "homeops-coordinator"}
+_EXCLUDED_PACKAGES = {"mrlesmithjr-mcp-common"}
 _MCP_ENTRY_SUFFIX = "mcp_server:main"
 _PYPI_PREFIX = "mrlesmithjr-mcp-"
 

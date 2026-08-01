@@ -3,8 +3,6 @@
 import re
 from datetime import date, timedelta
 
-from mcp_common.coordinator_events import emit_coordinator_event
-
 from homeops.db.connection import get_db
 
 
@@ -170,8 +168,6 @@ def mark_done(config, name, cost=None, provider=None, notes=None, done_date=None
     conn.commit()
     conn.close()
 
-    emit_coordinator_event("homeops", "task_done", {"name": task["name"]})
-
     return {
         "name": task["name"],
         "done_date": done_date,
@@ -194,8 +190,6 @@ def pause_task(config, name):
 
     if affected == 0:
         raise RuntimeError(f"No active task matching '{name}'.")
-
-    emit_coordinator_event("homeops", "task_pause", {"name": name})
 
     return {"name": name, "paused": True}
 
@@ -223,9 +217,6 @@ def delete_task(config, name):
     conn.commit()
     rowcount = result.rowcount
     conn.close()
-
-    if rowcount > 0:
-        emit_coordinator_event("homeops", "task_delete", {"name": name})
 
     return rowcount
 

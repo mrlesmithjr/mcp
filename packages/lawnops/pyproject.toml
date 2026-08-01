@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-lawnops"
-version = "1.0.46"
+version = "1.0.47"
 description = "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management"
 readme = "README.md"
 license = "MIT"
@@ -23,7 +23,6 @@ classifiers = [
 ]
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
-    "mrlesmithjr-mcp-apple-eventkit-tools>=0.2.3",
     "requests>=2.28.0",
     "pyyaml>=6.0",
     "pydrawise>=2026.4.0,<2027",

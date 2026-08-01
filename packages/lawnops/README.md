@@ -14,7 +14,6 @@ This is a personal tool that I'm sharing publicly. It's tailored to my setup but
 - **Irrigation Control** - Full Hydrawise management via [pydrawise](https://github.com/dknowles2/pydrawise): status, run/stop zones, suspend/resume, watering history
 - **Database Tracking** - SQLite for treatments, products, equipment, mowing visits, purchases, spending reports
 - **Reorder Alerts** - Flags zero-stock products that have been used in past treatments
-- **Apple Reminders** - Create iOS push notifications for lawn care tasks via macOS (iCloud sync)
 - **YNAB Import** - Pulls historical lawn spending from [ynab-tools](https://github.com/mrlesmithjr/mcp/tree/main/packages/ynab-tools) database with configurable payee mapping
 - **Obsidian Import** - One-time import from an Obsidian vault Task List
 - **Programmatic API** - Business logic is importable without CLI dependencies
@@ -116,7 +115,6 @@ See `config.example.yaml` in the repo for the full settings reference including 
 | Irrigation control | `hydrawise` credentials |
 | YNAB spending import | `ynab` config + ynab-tools installed |
 | Water usage correlation | `ynab` config (water_payees) |
-| Apple Reminders | macOS only, `reminders` config |
 
 ## Usage
 
@@ -172,7 +170,7 @@ lawnops db report spend --year 2025
 lawnops db report spend --year 2025 --category equipment
 lawnops db sync-irrigation --days 30
 
-# Deterministic checks (create an Apple Reminder if action is needed; issue #146)
+# Deterministic checks (read-only reports; issue #146, Reminders creation removed in #39)
 lawnops bermuda-check                # Soil temp vs Bermuda green-up threshold
 lawnops irrigation check             # Irrigation budget/ET issue check
 
@@ -202,7 +200,6 @@ All settings live in `~/.config/lawnops/config.json`. A legacy `config.yaml` in 
 | `mowing` | Default provider, schedule day, no-mow buffer |
 | `database` | DB path, auto-log toggle |
 | `pollen` | Pollen source URL and spray impact thresholds |
-| `reminders` | Apple Reminders list name, default time |
 | `ynab` | ynab-tools DB path, category, payee→provider mapping |
 | `obsidian` | Path to Task List.md for import |
 
@@ -371,7 +368,6 @@ lawnops/
 ├── mixrate.py             # Spray concentrate mix rate calculator
 ├── irrigation.py          # Hydrawise (async internals, sync API)
 ├── irrigation_config.py   # Declarative config export: serialize live controller state to YAML
-├── reminders.py           # Apple Reminders search-then-create dedup helper (used by bermuda-check/irrigation check, not a standalone CLI)
 ├── db/
 │   ├── connection.py      # SQLite connection helpers
 │   ├── schema.py          # Schema + init

@@ -64,7 +64,9 @@ jobs:
           uv sync --extra dashboard \
             --package mrlesmithjr-mcp-common \
             --package mrlesmithjr-mcp-flightops \
+            --package mrlesmithjr-mcp-homeops \
             --package mrlesmithjr-mcp-launchd-tools \
+            --package mrlesmithjr-mcp-lawnops \
             --package mrlesmithjr-mcp-nextdns-tools \
             --package mrlesmithjr-mcp-obsidian-search-tools \
             --package mrlesmithjr-mcp-sheets-tools \
@@ -82,7 +84,7 @@ jobs:
         # regardless of #96's root cause.
         run: |
           set -e
-          for pkg in mcp-common flightops launchd-tools \
+          for pkg in mcp-common flightops homeops launchd-tools lawnops \
                      nextdns-tools obsidian-search-tools sheets-tools \
                      unifi-tools weather-tools ynab-tools; do
             echo "::group::pytest packages/$pkg"
@@ -93,12 +95,12 @@ jobs:
   test-macos:
     name: Test (macOS / PyObjC packages)
     # apple-eventkit-tools, contacts-tools, imessage-tools, and mail-tools all
-    # depend on pyobjc-* (macOS-only wheels); homeops-coordinator, homeops, and
-    # lawnops transitively depend on apple-eventkit-tools (homeops/lawnops as
-    # of issue #146, for direct Reminders creation). Every other package is
-    # plain Python and runs in test-linux instead - keep this job's package
-    # list minimal, since macOS runner minutes are billed at a 10x multiplier
-    # versus Linux.
+    # depend on pyobjc-* (macOS-only wheels). homeops and lawnops dropped
+    # their apple-eventkit-tools dependency (issue #39) and homeops-coordinator
+    # was retired (issue #40), so all three moved to test-linux. Every other
+    # package is plain Python and runs in test-linux instead - keep this job's
+    # package list minimal, since macOS runner minutes are billed at a 10x
+    # multiplier versus Linux.
     runs-on: macos-latest
 
     steps:
@@ -118,10 +120,7 @@ jobs:
             --package mrlesmithjr-mcp-apple-eventkit-tools \
             --package mrlesmithjr-mcp-contacts-tools \
             --package mrlesmithjr-mcp-imessage-tools \
-            --package mrlesmithjr-mcp-mail-tools \
-            --package mrlesmithjr-mcp-homeops-coordinator \
-            --package mrlesmithjr-mcp-homeops \
-            --package mrlesmithjr-mcp-lawnops
+            --package mrlesmithjr-mcp-mail-tools
 
       - name: Run tests
         # One pytest invocation per package - see the matching comment in
@@ -130,7 +129,7 @@ jobs:
         run: |
           set -e
           for pkg in apple-eventkit-tools contacts-tools imessage-tools \
-                     mail-tools homeops-coordinator homeops lawnops; do
+                     mail-tools; do
             echo "::group::pytest packages/$pkg"
             uv run pytest packages/$pkg -v
             echo "::endgroup::"

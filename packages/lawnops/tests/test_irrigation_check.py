@@ -1,16 +1,17 @@
 """Tests for irrigation check (issue #146).
 
-evaluate_irrigation_check() is DB-only (no EventKit/Reminders import); it
-calls irrigation_budget() and et_recommendations() and combines their
-qualifying signals. Both underlying functions are patched at module level
-here rather than exercised against a live Hydrawise connection or synthetic
-water-bill history - the boundary math for each lives in its own function
-and is tested separately. The CLI handler's dedup call into lawnops.reminders
-is tested separately with RemindersManager mocked.
+evaluate_irrigation_check() is DB-only; it calls irrigation_budget() and
+et_recommendations() and combines their qualifying signals. Both underlying
+functions are patched at module level here rather than exercised against a
+live Hydrawise connection or synthetic water-bill history - the boundary
+math for each lives in its own function and is tested separately. The CLI
+handler's read-only report output is tested separately (issue #39 - Apple
+Reminders creation removed, so `lawnops irrigation check` now prints its
+findings instead).
 """
 
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from lawnops.cli.main import _cmd_irrigation_check
@@ -120,14 +121,8 @@ class TestEvaluateIrrigationCheck:
 
 
 class TestCmdIrrigationCheck:
-    @patch("lawnops.reminders.RemindersManager")
     @patch("lawnops.db.evaluate_irrigation_check")
-    def test_creates_reminder_when_budget_and_et_qualify(self, mock_eval, mock_manager_cls, tmp_config, capsys):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = []
-        mock_manager.create_reminder.return_value = {"id": "new1"}
-        mock_manager_cls.return_value = mock_manager
-
+    def test_prints_report_when_budget_and_et_qualify(self, mock_eval, tmp_config, capsys):
         mock_eval.return_value = {
             "qualifies": True,
             "budget_issue": _budget("over"),
@@ -136,23 +131,13 @@ class TestCmdIrrigationCheck:
 
         _cmd_irrigation_check(tmp_config)
 
-        mock_manager.search_reminders.assert_called_once_with("Irrigation: action needed", list_name="Personal")
-        mock_manager.create_reminder.assert_called_once()
-        args, kwargs = mock_manager.create_reminder.call_args
-        assert args[0] == "Irrigation: action needed: budget + ET"
-        assert kwargs["priority"] == 5
-        assert kwargs["due_time"] == "08:00"
-
         out = capsys.readouterr().out
-        assert "reminder created" in out
+        assert "Irrigation check: budget + ET" in out
+        assert "Budget over: $100.00 spent, $140.00 projected" in out
+        assert "2026-06: reduce ET by ~15%" in out
 
-    @patch("lawnops.reminders.RemindersManager")
     @patch("lawnops.db.evaluate_irrigation_check")
-    def test_reports_already_pending_when_reminder_exists(self, mock_eval, mock_manager_cls, tmp_config, capsys):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = [{"id": "abc", "title": "Irrigation: action needed"}]
-        mock_manager_cls.return_value = mock_manager
-
+    def test_prints_report_when_budget_alone_qualifies(self, mock_eval, tmp_config, capsys):
         mock_eval.return_value = {
             "qualifies": True,
             "budget_issue": _budget("warning"),
@@ -161,31 +146,20 @@ class TestCmdIrrigationCheck:
 
         _cmd_irrigation_check(tmp_config)
 
-        mock_manager.create_reminder.assert_not_called()
         out = capsys.readouterr().out
-        assert "reminder already pending" in out
+        assert "Irrigation check: budget warning" in out
 
-    @patch("lawnops.reminders.RemindersManager")
     @patch("lawnops.db.evaluate_irrigation_check")
-    def test_no_reminder_created_when_nothing_qualifies(self, mock_eval, mock_manager_cls, tmp_config, capsys):
+    def test_no_qualifying_issues(self, mock_eval, tmp_config, capsys):
         mock_eval.return_value = {"qualifies": False, "budget_issue": None, "et_issue": []}
 
         _cmd_irrigation_check(tmp_config)
 
-        mock_manager_cls.return_value.search_reminders.assert_not_called()
         out = capsys.readouterr().out
         assert "no qualifying issues" in out
 
-    @patch("lawnops.reminders.RemindersManager")
     @patch("lawnops.db.evaluate_irrigation_check")
-    def test_search_query_is_stable_prefix_not_dynamic_title(self, mock_eval, mock_manager_cls, tmp_config):
-        """The dedup search_query must stay the stable prefix regardless of
-        what the dynamic title summary says (issue #146 design notes)."""
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = []
-        mock_manager.create_reminder.return_value = {"id": "new1"}
-        mock_manager_cls.return_value = mock_manager
-
+    def test_et_issue_alone_prints_reduction_summary(self, mock_eval, tmp_config, capsys):
         mock_eval.return_value = {
             "qualifies": True,
             "budget_issue": None,
@@ -194,7 +168,6 @@ class TestCmdIrrigationCheck:
 
         _cmd_irrigation_check(tmp_config)
 
-        search_args, _ = mock_manager.search_reminders.call_args
-        assert search_args[0] == "Irrigation: action needed"
-        create_args, _ = mock_manager.create_reminder.call_args
-        assert create_args[0] == "Irrigation: action needed: ET reduction recommended"
+        out = capsys.readouterr().out
+        assert "Irrigation check: ET reduction recommended" in out
+        assert "2026-06: reduce ET by ~15%" in out

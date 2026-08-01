@@ -1,24 +1,21 @@
 """Tests for utility anomaly detection (issue #146).
 
-evaluate_utility_anomalies() is DB-only (no EventKit/Reminders import), so
-it's tested here directly against a temp SQLite DB. reminders.py's dedup
-logic is tested separately with RemindersManager mocked.
+evaluate_utility_anomalies() is DB-only, so it's tested here directly
+against a temp SQLite DB. The CLI command's read-only report output is
+tested separately (issue #39 - Apple Reminders creation removed, so
+`homeops utility check-anomaly` now prints its findings instead).
 """
-
-from unittest.mock import MagicMock, patch
 
 import pytest
 from homeops.db.utilities import add_utility_bill, evaluate_utility_anomalies
-from homeops.reminders import create_reminder_if_missing
 
 
 @pytest.fixture()
 def tmp_config(tmp_path):
-    """Config pointing to a temp DB, plus the default reminders section."""
+    """Config pointing to a temp DB."""
     db_path = tmp_path / "homeops.db"
     return {
         "database": {"path": str(db_path)},
-        "reminders": {"list": "Personal", "default_time": "10:00"},
     }
 
 
@@ -87,74 +84,25 @@ class TestEvaluateUtilityAnomalies:
         assert len(anomalies) == 2
 
 
-class TestCreateReminderIfMissing:
-    @patch("homeops.reminders.RemindersManager")
-    def test_does_not_create_when_existing_match_found(self, mock_manager_cls, tmp_config):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = [{"id": "abc123", "title": "Utility anomaly: bill spike"}]
-        mock_manager_cls.return_value = mock_manager
+class TestCmdUtilityCheckAnomaly:
+    def test_prints_report_when_anomalies_found(self, tmp_config, capsys):
+        from homeops.cli.main import _cmd_utility_check_anomaly
 
-        result = create_reminder_if_missing(
-            tmp_config,
-            title="Utility anomaly: bill spike detected",
-            search_query="utility anomaly",
-            notes="electric: latest $200 vs baseline $100 (100% over)",
-            due_date="2026-07-26",
-            priority=5,
-        )
+        _add_months(tmp_config, "electric", [100, 100, 100, 100, 100, 100, 200])
 
-        mock_manager.search_reminders.assert_called_once_with("utility anomaly", list_name="Personal")
-        mock_manager.create_reminder.assert_not_called()
-        assert result["created"] is False
+        _cmd_utility_check_anomaly(tmp_config)
 
-    @patch("homeops.reminders.RemindersManager")
-    def test_creates_with_expected_args_when_no_match(self, mock_manager_cls, tmp_config):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = []
-        mock_manager.create_reminder.return_value = {"id": "new1", "title": "Utility anomaly: bill spike detected"}
-        mock_manager_cls.return_value = mock_manager
+        out = capsys.readouterr().out
+        assert "1 anomaly found (electric)" in out
+        assert "electric: latest $200.00 vs baseline avg $100.00" in out
+        assert "Check HVAC efficiency, leaks, or rate changes." in out
 
-        result = create_reminder_if_missing(
-            tmp_config,
-            title="Utility anomaly: bill spike detected",
-            search_query="utility anomaly",
-            notes="electric: latest $200 vs baseline $100 (100% over)",
-            due_date="2026-07-26",
-            priority=5,
-        )
+    def test_prints_no_anomalies_when_none_found(self, tmp_config, capsys):
+        from homeops.cli.main import _cmd_utility_check_anomaly
 
-        mock_manager.create_reminder.assert_called_once_with(
-            "Utility anomaly: bill spike detected",
-            list_name="Personal",
-            due_date="2026-07-26",
-            due_time="10:00",
-            notes="electric: latest $200 vs baseline $100 (100% over)",
-            priority=5,
-        )
-        assert result["created"] is True
-        assert result["reminder"]["id"] == "new1"
+        _add_months(tmp_config, "electric", [100, 100, 100, 100, 100, 100, 105])
 
-    @patch("homeops.reminders.RemindersManager")
-    def test_uses_explicit_list_and_due_time_over_config_defaults(self, mock_manager_cls, tmp_config):
-        mock_manager = MagicMock()
-        mock_manager.search_reminders.return_value = []
-        mock_manager.create_reminder.return_value = {"id": "new2"}
-        mock_manager_cls.return_value = mock_manager
+        _cmd_utility_check_anomaly(tmp_config)
 
-        create_reminder_if_missing(
-            tmp_config,
-            title="Some title",
-            search_query="some query",
-            list_name="Work",
-            due_time="08:00",
-        )
-
-        mock_manager.search_reminders.assert_called_once_with("some query", list_name="Work")
-        mock_manager.create_reminder.assert_called_once_with(
-            "Some title",
-            list_name="Work",
-            due_date=None,
-            due_time="08:00",
-            notes=None,
-            priority=0,
-        )
+        out = capsys.readouterr().out
+        assert "Utility anomaly check: no anomalies" in out

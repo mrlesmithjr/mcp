@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-from mcp_common.coordinator_events import emit_coordinator_event
-
 from lawnops.db.connection import get_db
 
 
@@ -19,8 +17,6 @@ def add_treatment(config, date, area, product, method=None, amount=None, soil_te
     )
     conn.commit()
     conn.close()
-
-    emit_coordinator_event("lawnops", "treatment_add", {"product": product, "area": area, "date": date})
 
 
 def list_treatments(config, year=None):

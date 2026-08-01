@@ -50,7 +50,7 @@ def main():
 
     task_sub.add_parser(
         "escalate",
-        help="Check for significantly overdue tasks (safety, or 60+ days), create a reminder if any found",
+        help="Report significantly overdue tasks (safety, or 60+ days)",
     )
 
     # --- pest ---
@@ -152,7 +152,7 @@ def main():
 
     util_sub.add_parser(
         "check-anomaly",
-        help="Check for bills >20%% above their trailing baseline average, create a reminder if any found",
+        help="Report bills >20%% above their trailing baseline average",
     )
 
     # --- status ---
@@ -306,13 +306,10 @@ def _handle_task(args, config):
 def _cmd_task_escalate(config):
     """Deterministic replacement for the old `claude -p`-based
     task-escalation.sh LaunchAgent script (issue #146). Flags any overdue
-    safety-category task and any non-safety task overdue more than 60 days,
-    creating a deduped Apple Reminder when any qualify.
+    safety-category task and any non-safety task overdue more than 60 days.
+    Read-only report: prints the qualifying tasks (issue #39 - Apple
+    Reminders creation removed, no delivery channel left).
     """
-    from datetime import date
-
-    from homeops.reminders import create_reminder_if_missing
-
     qualifying = db.evaluate_task_escalation(config)
 
     if not qualifying:
@@ -320,21 +317,11 @@ def _cmd_task_escalate(config):
         return
 
     lines = [f"{t['name']} ({t['category']}): {t['days_overdue']} days overdue - {t['reason']}" for t in qualifying]
-    notes = "\n".join(lines)
-
-    result = create_reminder_if_missing(
-        config,
-        title="HomeOps: overdue tasks need attention",
-        search_query="overdue tasks need attention",
-        notes=notes,
-        due_date=date.today().isoformat(),
-        due_time="08:00",
-        priority=1,
-    )
 
     plural = "" if len(qualifying) == 1 else "s"
-    status = "reminder created" if result["created"] else "reminder already pending"
-    print(f"Task escalation check: {len(qualifying)} task{plural} qualify - {status}")
+    print(f"Task escalation check: {len(qualifying)} task{plural} qualify")
+    for line in lines:
+        print(f"  - {line}")
 
 
 def _handle_pest(args, config):
@@ -457,41 +444,25 @@ def _handle_utility(args, config):
 def _cmd_utility_check_anomaly(config):
     """Deterministic replacement for the old `claude -p`-based
     utility-anomaly.sh LaunchAgent script (issue #146). Flags utility bills
-    more than 20% above their trailing baseline average and creates a
-    deduped Apple Reminder when any are found.
+    more than 20% above their trailing baseline average. Read-only report:
+    prints the anomalies found (issue #39 - Apple Reminders creation
+    removed, no delivery channel left).
     """
-    from datetime import date
-
-    from homeops.reminders import create_reminder_if_missing
-
     anomalies = db.evaluate_utility_anomalies(config)
 
     if not anomalies:
         print("Utility anomaly check: no anomalies")
         return
 
-    lines = []
-    for a in anomalies:
-        lines.append(
-            f"{a['type']}: latest ${a['latest_amount']:.2f} vs baseline avg "
-            f"${a['baseline_avg']:.2f} ({a['pct_over']:.0f}% over)"
-        )
-    lines.append("Check HVAC efficiency, leaks, or rate changes.")
-    notes = "\n".join(lines)
-
-    result = create_reminder_if_missing(
-        config,
-        title="Utility anomaly: bill spike detected",
-        search_query="utility anomaly",
-        notes=notes,
-        due_date=date.today().isoformat(),
-        priority=5,
-    )
-
     types = ", ".join(a["type"] for a in anomalies)
     plural = "y" if len(anomalies) == 1 else "ies"
-    status = "reminder created" if result["created"] else "reminder already pending"
-    print(f"Utility anomaly check: {len(anomalies)} anomal{plural} found ({types}) - {status}")
+    print(f"Utility anomaly check: {len(anomalies)} anomal{plural} found ({types})")
+    for a in anomalies:
+        print(
+            f"  - {a['type']}: latest ${a['latest_amount']:.2f} vs baseline avg "
+            f"${a['baseline_avg']:.2f} ({a['pct_over']:.0f}% over)"
+        )
+    print("  Check HVAC efficiency, leaks, or rate changes.")
 
 
 def _handle_hvac(args, config):

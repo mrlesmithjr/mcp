@@ -28,7 +28,7 @@ GIT_NOAGENT := GIT_SSH_COMMAND='ssh -o IdentityAgent=none'
 PKG_NAME     = uv run python -c "import tomllib,sys;print(tomllib.load(open('packages/$(1)/pyproject.toml','rb'))['project']['name'])"
 
 .DEFAULT_GOAL := help
-.PHONY: help gen check bump ship release init-develop hooks publish-common check-common-published publish-apple-eventkit-tools check-apple-eventkit-tools-published
+.PHONY: help gen check bump ship release init-develop hooks publish-common check-common-published
 
 help:
 	@echo "Release tooling for the personal MCP marketplace"
@@ -49,8 +49,6 @@ help:
 	@echo "      One-time per clone: activate the repo-local pre-push main guard."
 	@echo "  make publish-common"
 	@echo "      Build and publish mrlesmithjr-mcp-common to PyPI (needs UV_PUBLISH_TOKEN)."
-	@echo "  make publish-apple-eventkit-tools"
-	@echo "      Build and publish mrlesmithjr-mcp-apple-eventkit-tools to PyPI (needs UV_PUBLISH_TOKEN)."
 	@echo ""
 	@echo "  Tools: $(notdir $(wildcard packages/*))"
 
@@ -85,12 +83,11 @@ check:
 		--package mrlesmithjr-mcp-apple-eventkit-tools \
 		--package mrlesmithjr-mcp-contacts-tools \
 		--package mrlesmithjr-mcp-imessage-tools \
-		--package mrlesmithjr-mcp-mail-tools \
-		--package mrlesmithjr-mcp-homeops-coordinator
+		--package mrlesmithjr-mcp-mail-tools
 	@for pkg in mcp-common flightops homeops launchd-tools lawnops \
 	            nextdns-tools obsidian-search-tools sheets-tools unifi-tools \
 	            weather-tools ynab-tools apple-eventkit-tools \
-	            contacts-tools imessage-tools mail-tools homeops-coordinator; do \
+	            contacts-tools imessage-tools mail-tools; do \
 		echo "[check] pytest packages/$$pkg"; \
 		uv run pytest packages/$$pkg -q || exit 1; \
 	done
@@ -157,49 +154,17 @@ publish-common:
 	uv build packages/mcp-common; \
 	uv publish dist/mrlesmithjr_mcp_common-$$VER-*.whl dist/mrlesmithjr_mcp_common-$$VER.tar.gz
 
-# Guard: refuse to release when the local apple-eventkit-tools is ahead of
-# PyPI. Any tool venv that depends on it (homeops, lawnops, as of issue #146)
-# installs it from PyPI, so shipping tools that expect an unpublished version
-# would break fresh installs -- same reasoning as check-common-published.
-check-apple-eventkit-tools-published:
-	@LOCAL=$$(uv run python -c "import tomllib;print(tomllib.load(open('packages/apple-eventkit-tools/pyproject.toml','rb'))['project']['version'])"); \
-	PYPI=$$(curl -fsSL https://pypi.org/pypi/mrlesmithjr-mcp-apple-eventkit-tools/json 2>/dev/null | python3 -c "import sys,json;print(json.load(sys.stdin)['info']['version'])" 2>/dev/null || echo "none"); \
-	echo "[check-apple-eventkit-tools] local=$$LOCAL pypi=$$PYPI"; \
-	if [ "$$PYPI" = "none" ]; then \
-		echo "ERROR: mrlesmithjr-mcp-apple-eventkit-tools has never been published to PyPI."; \
-		echo "       Run 'make publish-apple-eventkit-tools' before releasing tools that depend on it."; \
-		exit 1; \
-	fi; \
-	if [ "$$LOCAL" != "$$PYPI" ]; then \
-		NEWER=$$(printf '%s\n%s\n' "$$PYPI" "$$LOCAL" | sort -V | tail -1); \
-		if [ "$$NEWER" = "$$LOCAL" ]; then \
-			echo "ERROR: local apple-eventkit-tools $$LOCAL is ahead of PyPI $$PYPI."; \
-			echo "       Run 'make publish-apple-eventkit-tools' before releasing tools that depend on it."; \
-			exit 1; \
-		fi; \
-	fi
-
-# Build and publish apple-eventkit-tools to PyPI. Requires UV_PUBLISH_TOKEN in
-# the env; publishing is intentionally a manual, credentialed step.
-publish-apple-eventkit-tools:
-	@test -n "$$UV_PUBLISH_TOKEN" || { echo "ERROR: set UV_PUBLISH_TOKEN (PyPI token) first"; exit 1; }
-	@VER=$$(uv run python -c "import tomllib;print(tomllib.load(open('packages/apple-eventkit-tools/pyproject.toml','rb'))['project']['version'])"); \
-	echo "[publish-apple-eventkit-tools] building + publishing mrlesmithjr-mcp-apple-eventkit-tools $$VER"; \
-	uv build packages/apple-eventkit-tools; \
-	uv publish dist/mrlesmithjr_mcp_apple_eventkit_tools-$$VER-*.whl dist/mrlesmithjr_mcp_apple_eventkit_tools-$$VER.tar.gz
-
 # Promote the current develop to main through a CI-gated PR, then tag each
 # plugin at its shipped version. Run from a clean, pushed develop.
 #
-#   1. Block if mcp-common or apple-eventkit-tools is unpublished
-#      (check-common-published, check-apple-eventkit-tools-published).
+#   1. Block if mcp-common is unpublished (check-common-published).
 #   2. Open (or reuse) a develop -> main PR.
 #   3. Poll until CI passes; fail fast on a red check (or, with SKIP_CI=1,
 #      run `make check` locally instead of touching GitHub Actions at all --
 #      for when the account's Actions minutes are exhausted).
 #   4. Squash-merge, then tag every plugin as <slug>-v<version> from main.
 #   5. Merge main back into develop so the squash commit does not diverge.
-release: check-common-published check-apple-eventkit-tools-published
+release: check-common-published
 	@BRANCH=$$(git branch --show-current); \
 	if [ "$$BRANCH" != "develop" ]; then echo "ERROR: run 'make release' from develop (on '$$BRANCH')"; exit 1; fi; \
 	if [ -n "$$(git status --porcelain)" ]; then echo "ERROR: uncommitted changes -- commit and push first"; exit 1; fi; \
