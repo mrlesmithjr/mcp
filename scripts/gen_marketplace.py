@@ -67,13 +67,13 @@ README_FILE = REPO_ROOT / "README.md"
 # Matches a README plugin-table row: | `<name>` | <version> | <description> |
 # Captures the surrounding cells so only the version cell is rewritten and the
 # hand-curated name + description columns are preserved byte-for-byte. The
-# non-plugin rows (mcp-common "(library)", homeops-coordinator "(daemon)") are
-# left untouched because their names are not in the discovered tools list.
+# non-plugin row (mcp-common "(library)") is left untouched because its name
+# is not in the discovered tools list.
 _README_ROW_RE = re.compile(r"^(\| `)([^`]+)(` \| )([^|]+?)( \| .*)$")
 
 # Packages that carry no MCP server and must be excluded from the marketplace.
-# mcp-common is a shared library; homeops-coordinator is a coordinator daemon.
-_EXCLUDED_PACKAGES = {"mrlesmithjr-mcp-common", "homeops-coordinator"}
+# mcp-common is a shared library.
+_EXCLUDED_PACKAGES = {"mrlesmithjr-mcp-common"}
 
 # Convention: the MCP entry point must end with this suffix.
 _MCP_ENTRY_SUFFIX = "mcp_server:main"
@@ -750,7 +750,7 @@ def _collect_tools() -> list[dict]:
 
         mcp_script = _find_mcp_script(scripts)
         if mcp_script is None:
-            # No MCP entry point -- skip (e.g. mcp-common, homeops-coordinator).
+            # No MCP entry point -- skip (e.g. mcp-common).
             continue
 
         script_name, _ = mcp_script

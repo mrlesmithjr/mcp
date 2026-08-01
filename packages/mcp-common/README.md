@@ -41,7 +41,7 @@ def main() -> None:
 | `mcp_common.config` | `load_layered_config(tool_name, env_map)`: env vars > config.json > .env fallback |
 | `mcp_common.paths` | `config_dir()`, `config_file()`, `data_dir()` XDG path resolvers |
 | `mcp_common.errors` | `tool_error()`, `error_json()`, `safe_tool` decorator |
-| `mcp_common.coordinator_events` | `emit_coordinator_event(source, event_type, payload) -> bool`: self-healing write onto homeops-coordinator's `events.db` bus. Never raises; returns `False` on failure so callers can fire-and-forget it after a state change. |
+| `mcp_common.coordinator_events` | `emit_coordinator_event(source, event_type, payload) -> bool`: self-healing write onto the (retired) homeops-coordinator's `events.db` bus. Never raises; returns `False` on failure so callers can fire-and-forget it after a state change. Unused dead code since homeops-coordinator was retired (issue #40); no remaining callers emit events onto this bus, and removal is a follow-up mcp-common API change. |
 | `mcp_common.google_oauth` | `GoogleOAuthClient`: shared Google OAuth2 base class (token storage/refresh, authenticated `request()`) for any tool calling a Google REST API. Credentials at `~/.config/google/credentials.json` (shared across tools); tokens per-tool at `~/.config/<tool_name>/<token_filename>`. Used by apple-eventkit-tools' `GoogleCalendarClient` (issue #59) and contacts-tools' `GooglePeopleClient` (issue #60). |
 
 ## Requirements

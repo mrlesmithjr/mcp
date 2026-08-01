@@ -10,7 +10,6 @@ members = ["packages/*"]
 
 [tool.uv.sources]
 mrlesmithjr-mcp-common = { workspace = true }
-mrlesmithjr-mcp-apple-eventkit-tools = { workspace = true }
 
 [dependency-groups]
 dev = [

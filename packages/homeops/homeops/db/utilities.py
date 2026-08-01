@@ -1,7 +1,5 @@
 """Utility bill tracking and trend analysis."""
 
-from mcp_common.coordinator_events import emit_coordinator_event
-
 from homeops.db.connection import get_db
 
 VALID_TYPES = ["water", "electric", "gas", "internet", "trash"]
@@ -35,8 +33,6 @@ def add_utility_bill(config, bill_date, utility_type, amount, usage=None, notes=
 
     conn.commit()
     conn.close()
-
-    emit_coordinator_event("homeops", "utility_add", {"type": utility_type, "amount": amount, "date": bill_date})
 
     return {
         "date": bill_date,

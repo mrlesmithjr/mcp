@@ -41,11 +41,6 @@ hydrawise:
   #   1: "Front yard rotors"
   #   2: "Back yard sprays"
 
-# Apple Reminders (syncs to iPhone via iCloud)
-# reminders:
-#   list: "Reminders"          # Apple Reminders list name
-#   default_time: "10:00"      # Default reminder time if not specified (HH:MM)
-
 # Mowing service defaults
 mowing:
   default_provider: "Mowing Service"

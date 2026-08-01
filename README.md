@@ -6,17 +6,17 @@ Every tool lives under `packages/` as a workspace member with a single shared `u
 
 ## Packages
 
-Fourteen tools ship as marketplace plugins. Two packages support them and are not plugins.
+Fourteen tools ship as marketplace plugins. One package supports them and is not a plugin.
 
 | Package | Version | What it does |
 |---------|---------|--------------|
 | `apple-eventkit-tools` | 0.2.4 | Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit |
 | `contacts-tools` | 0.2.3 | Contacts read/write via the Google People API |
 | `flightops` | 0.1.7 | Flight price tracking (Google Flights, no API key) |
-| `homeops` | 0.1.25 | Home maintenance operations: tasks, pest, services, HVAC |
+| `homeops` | 0.1.26 | Home maintenance operations: tasks, pest, services, HVAC |
 | `imessage-tools` | 0.1.9 | Read iMessage chats and send via AppleScript |
 | `launchd-tools` | 0.1.4 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
-| `lawnops` | 1.0.46 | Lawn care: weather, irrigation, treatments, products |
+| `lawnops` | 1.0.47 | Lawn care: weather, irrigation, treatments, products |
 | `mail-tools` | 0.1.35 | Apple Mail read, search, compose across accounts |
 | `nextdns-tools` | 0.1.13 | NextDNS analytics, blocking stats, device activity |
 | `obsidian-search-tools` | 0.1.8 | Hybrid semantic and keyword search over an Obsidian vault |
@@ -25,9 +25,8 @@ Fourteen tools ship as marketplace plugins. Two packages support them and are no
 | `weather-tools` | 0.1.6 | Historical weather data via Open-Meteo |
 | `ynab-tools` | 1.0.386 | YNAB budget sync, payee cleanup, financial analysis |
 | `mcp-common` | (library) | Shared helpers: logging, layered config, paths, errors. Not a plugin. |
-| `homeops-coordinator` | (daemon) | LaunchAgent that coordinates home ops across tools. Not a plugin. |
 
-Each package has its own README with setup, tools, and usage. `mcp-common` and `homeops-coordinator` expose no MCP server and are excluded from the marketplace.
+Each package has its own README with setup, tools, and usage. `mcp-common` exposes no MCP server and is excluded from the marketplace.
 
 ## Installing a tool
 
@@ -66,8 +65,7 @@ mcp/
 │   │       ├── hooks.json           # GENERATED: SessionStart hook wiring
 │   │       ├── install_deps.sh      # GENERATED: builds the persistent venv
 │   │       └── run_server.sh        # GENERATED: cold-start launcher
-│   ├── mcp-common/                  # Shared library (no plugin files)
-│   └── homeops-coordinator/         # Daemon (no plugin files)
+│   └── mcp-common/                  # Shared library (no plugin files)
 ├── .claude-plugin/
 │   └── marketplace.json             # GENERATED: Claude marketplace index
 ├── .agents/plugins/

@@ -22,7 +22,6 @@ members = [
     "mrlesmithjr-mcp-contacts-tools",
     "mrlesmithjr-mcp-flightops",
     "mrlesmithjr-mcp-homeops",
-    "mrlesmithjr-mcp-homeops-coordinator",
     "mrlesmithjr-mcp-imessage-tools",
     "mrlesmithjr-mcp-launchd-tools",
     "mrlesmithjr-mcp-lawnops",
@@ -1324,11 +1323,10 @@ requires-dist = [
 
 [[package]]
 name = "mrlesmithjr-mcp-homeops"
-version = "0.1.25"
+version = "0.1.26"
 source = { editable = "packages/homeops" }
 dependencies = [
     { name = "mcp" },
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools" },
     { name = "mrlesmithjr-mcp-common" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -1337,25 +1335,9 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "mcp", specifier = ">=1.0,<2" },
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools", editable = "packages/apple-eventkit-tools" },
     { name = "mrlesmithjr-mcp-common", editable = "packages/mcp-common" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.28.0" },
-]
-
-[[package]]
-name = "mrlesmithjr-mcp-homeops-coordinator"
-version = "0.1.11"
-source = { editable = "packages/homeops-coordinator" }
-dependencies = [
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools" },
-    { name = "mrlesmithjr-mcp-lawnops" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools", editable = "packages/apple-eventkit-tools" },
-    { name = "mrlesmithjr-mcp-lawnops", editable = "packages/lawnops" },
 ]
 
 [[package]]
@@ -1405,12 +1387,11 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mrlesmithjr-mcp-lawnops"
-version = "1.0.46"
+version = "1.0.47"
 source = { editable = "packages/lawnops" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "mcp" },
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools" },
     { name = "mrlesmithjr-mcp-common" },
     { name = "pydrawise" },
     { name = "pyyaml" },
@@ -1421,7 +1402,6 @@ dependencies = [
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
     { name = "mcp", specifier = ">=1.0,<2" },
-    { name = "mrlesmithjr-mcp-apple-eventkit-tools", editable = "packages/apple-eventkit-tools" },
     { name = "mrlesmithjr-mcp-common", editable = "packages/mcp-common" },
     { name = "pydrawise", specifier = ">=2026.4.0,<2027" },
     { name = "pyyaml", specifier = ">=6.0" },

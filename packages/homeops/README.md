@@ -20,7 +20,7 @@ Run the setup wizard:
 homeops configure
 ```
 
-**HVAC monitoring tools query Prometheus, not Home Assistant.** Home Assistant already exports its climate metrics to Prometheus independently of homeops, so `hvac_status`/`hvac_history` read from there instead of calling Home Assistant's REST API - homeops and Home Assistant never depend on each other directly. No credentials are required, just a reachable Prometheus URL - the wizard prompts for one, pre-filled with `http://localhost:9091`. Point it at whichever host runs the Prometheus that scrapes your Home Assistant; only accept the default if Prometheus runs on this machine. Non-sensitive settings (database path, categories, reminders list) are preserved if you re-run configure.
+**HVAC monitoring tools query Prometheus, not Home Assistant.** Home Assistant already exports its climate metrics to Prometheus independently of homeops, so `hvac_status`/`hvac_history` read from there instead of calling Home Assistant's REST API - homeops and Home Assistant never depend on each other directly. No credentials are required, just a reachable Prometheus URL - the wizard prompts for one, pre-filled with `http://localhost:9091`. Point it at whichever host runs the Prometheus that scrapes your Home Assistant; only accept the default if Prometheus runs on this machine. Non-sensitive settings (database path, categories) are preserved if you re-run configure.
 
 ### Alternative: manual config
 
@@ -45,8 +45,8 @@ Create `~/.config/homeops/config.json` directly:
 |-----------|----------|---------|-------------|
 | `prometheus_url` | No | `http://localhost:9091` | Prometheus base URL for HVAC tools (no auth) |
 | `database.path` | No | `~/.local/share/homeops/homeops.db` | SQLite database location |
-| `reminders.list` | No | `Personal` | Apple Reminders list name |
-| `reminders.default_time` | No | `10:00` | Default reminder time (HH:MM) |
+| `reminders.list` | No | `Personal` | Unused (issue #39 - Apple Reminders creation removed); harmless to leave in config |
+| `reminders.default_time` | No | `10:00` | Unused (issue #39 - Apple Reminders creation removed); harmless to leave in config |
 | `categories.tasks` | No | hvac, plumbing, gutters, pest, electrical, exterior, interior, safety, appliance | Valid task categories |
 | `categories.providers` | No | hvac, gutters, plumbing, electrical, pest, general, generator, lighting, radon | Valid provider categories |
 | `categories.costs` | No | hvac, gutters, pest, plumbing, electrical, repair, supplies, service | Valid cost categories |
@@ -78,7 +78,7 @@ homeops task done "gutters" --cost 150 --provider "Gutter Pro"
 homeops task history "gutters"       # Completion history
 homeops task pause "gutters"         # Pause a task
 homeops task resume "gutters"        # Resume
-homeops task escalate                # Flag safety/60+-day overdue tasks, create a Reminder if any found
+homeops task escalate                # Report safety/60+-day overdue tasks
 
 # Pest control
 homeops pest add --date 2025-03-23 --area perimeter --product "Cyzmic CS" --method spray
@@ -95,7 +95,7 @@ homeops appliance alerts             # Expiring warranties and aging units
 # Utilities
 homeops utility summary              # Spending by type
 homeops utility trend electric       # Monthly trend
-homeops utility check-anomaly        # Flag bills >20% above trailing baseline avg, create a Reminder if any found
+homeops utility check-anomaly        # Report bills >20% above trailing baseline avg
 
 # Costs
 homeops cost summary                 # By category
