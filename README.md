@@ -16,7 +16,7 @@ Fourteen tools ship as marketplace plugins. One package supports them and is not
 | `homeops` | 0.1.26 | Home maintenance operations: tasks, pest, services, HVAC |
 | `imessage-tools` | 0.1.9 | Read iMessage chats and send via AppleScript |
 | `launchd-tools` | 0.1.4 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
-| `lawnops` | 1.0.47 | Lawn care: weather, irrigation, treatments, products |
+| `lawnops` | 1.0.48 | Lawn care: weather, irrigation, treatments, products |
 | `mail-tools` | 0.1.35 | Apple Mail read, search, compose across accounts |
 | `nextdns-tools` | 0.1.13 | NextDNS analytics, blocking stats, device activity |
 | `obsidian-search-tools` | 0.1.8 | Hybrid semantic and keyword search over an Obsidian vault |

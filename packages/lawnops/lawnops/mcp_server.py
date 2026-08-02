@@ -981,13 +981,15 @@ def irrigation_pace() -> str:
 
     Projection uses a schedule-based model derived from 90-day run history
     (effective cycle period x zone count x avg run duration); falls back to
-    linear pace extrapolation when history is insufficient. Cost-per-minute is
-    dynamically weighted from the three most recent qualifying billing months
-    (50/30/20%) rather than a hardcoded config value.
+    linear pace extrapolation when history is insufficient. Cost-per-minute
+    comes from the configured `hydrawise.budget.cost_per_minute` (cpm_source
+    "config") when set; observed_cpm_from_bills is a diagnostic-only value
+    weighted from recent billing months, never used for the projection.
 
     Returns JSON: {month, month_name, current_minutes, projected_minutes,
     projected_cost, projection_method, projection_reliability, cpm_source,
-    last_year_minutes, historical_avg_minutes, alert_level, thresholds}
+    observed_cpm_from_bills, last_year_minutes, historical_avg_minutes,
+    alert_level, thresholds}
     """
     try:
         from lawnops.db import irrigation_pace as _pace
@@ -1006,13 +1008,17 @@ def irrigation_budget() -> str:
     bill and category info for Claude to orchestrate planned expense updates.
 
     Projection uses a schedule-based model (90-day run history); falls back to
-    linear pace extrapolation. Cost-per-minute is dynamically weighted from recent
-    billing months. et_pct_for_budget is the ET% needed to stay within the configured
-    monthly dollar limit, or null if not applicable.
+    linear pace extrapolation. Cost-per-minute comes from the configured
+    `hydrawise.budget.cost_per_minute` (cpm_source "config") when set;
+    observed_cpm_from_bills is a diagnostic-only value weighted from recent
+    billing months, never used for the projection. et_pct_for_budget is the
+    ET% needed to stay within the configured monthly dollar limit, or null if
+    not applicable.
 
     Returns JSON: {month, budget_status, current_minutes, projected_minutes,
     projected_cost, et_pct_for_budget, projection_method, projection_reliability,
-    cpm_source, pct_used, remaining, recommendations[], ynab_integration}
+    cpm_source, observed_cpm_from_bills, pct_used, remaining, recommendations[],
+    ynab_integration}
     """
     try:
         from lawnops.db import irrigation_budget as _budget
@@ -1103,8 +1109,10 @@ def et_recommendations(year: int | None = None) -> str:
 
     budget_based_recommendation is the primary field: if a monthly dollar budget is
     configured, it contains the ET% needed to stay within it this month using
-    schedule-based projection and dynamic CPM. The legacy recommendations list
-    (CPM vs historical average) is secondary context. Advisory only - adjustments
+    schedule-based projection and the configured `hydrawise.budget.cost_per_minute`
+    (authoritative; cpm_source reads "config" when set). The legacy recommendations
+    list (avg_cost_per_minute vs historical bill months) is separate, backward-
+    looking bill analysis and is secondary context. Advisory only - adjustments
     must be made in the Hydrawise app.
 
     Returns JSON: {year, avg_cost_per_minute, months[], recommendations[],
