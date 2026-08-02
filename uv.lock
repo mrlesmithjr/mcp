@@ -1387,7 +1387,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mrlesmithjr-mcp-lawnops"
-version = "1.0.48"
+version = "1.0.49"
 source = { editable = "packages/lawnops" }
 dependencies = [
     { name = "beautifulsoup4" },

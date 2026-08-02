@@ -1,4 +1,9 @@
-"""Water usage correlation - irrigation runtime vs water bills from YNAB."""
+"""Water usage correlation - irrigation runtime vs the authoritative config cost-per-minute.
+
+Water bills from YNAB are pulled in only for baseline/informational context
+(issue #44); irrigation cost is `irrigation_minutes * config cost-per-minute`,
+not a regression against bill amounts.
+"""
 
 import sqlite3
 from pathlib import Path
@@ -109,11 +114,100 @@ def _get_irrigation_monthly(config, year=None):
         conn.close()
 
 
+def _compute_baseline(months):
+    """Compute the baseline (non-irrigation) water bill from low-runtime months.
+
+    "Minimal" irrigation = less than 5 minutes for the month (winterization
+    tests, etc). Outliers (>1.75x median) are dropped to avoid a double-payment
+    month skewing the baseline. `months` is a list of dicts with at least
+    `month`, `irrigation_minutes`, `water_bill`.
+
+    Returns (baseline_avg, baseline_months). This baseline is informational
+    context (and feeds `_bill_regressed_months`'s diagnostic regression below)
+    -- it does not drive the authoritative irrigation cost in
+    `get_water_usage_report` (see issue #44).
+    """
+    baseline_candidates = [
+        (m["month"], m["water_bill"]) for m in months if m["irrigation_minutes"] < 5 and m["water_bill"] is not None
+    ]
+
+    if len(baseline_candidates) >= 3:
+        bills_sorted = sorted(b for _, b in baseline_candidates)
+        median = bills_sorted[len(bills_sorted) // 2]
+        baseline_filtered = [(m, b) for m, b in baseline_candidates if b <= median * 1.75]
+    else:
+        baseline_filtered = baseline_candidates
+
+    baseline_months = [m for m, _ in baseline_filtered]
+    baseline_bills = [b for _, b in baseline_filtered]
+    baseline_avg = round(sum(baseline_bills) / len(baseline_bills), 2) if baseline_bills else None
+    return baseline_avg, baseline_months
+
+
+def _bill_regressed_months(config, year=None):
+    """Bill-regressed per-month irrigation cost, diagnostic only (issue #44).
+
+    Reproduces the pre-#44 regression (`bill - baseline`, divided by minutes)
+    that `get_water_usage_report` used before its per-month cost became the
+    config-authoritative cost-per-minute. Retained only so
+    `irrigation_analytics._weighted_cpm_from_bills` can still compare the
+    configured rate against what water bills actually show
+    (`observed_cpm_from_bills`) -- it is never used for a cost projection.
+
+    Returns a list of dicts: `month`, `irrigation_minutes`, `water_bill`,
+    `estimated_irrigation_cost` (bill-derived), `cost_per_minute` (bill-derived).
+    """
+    water_bills = _get_water_bills(config)
+    irrigation = _get_irrigation_monthly(config, year)
+
+    all_months = sorted(set(list(water_bills.keys()) + list(irrigation.keys())))
+    if year:
+        all_months = [m for m in all_months if m.startswith(str(year))]
+
+    months = []
+    for month in all_months:
+        irr = irrigation.get(month, {"minutes": 0, "runs": 0, "estimated_gallons": 0.0})
+        months.append(
+            {
+                "month": month,
+                "irrigation_minutes": irr["minutes"],
+                "water_bill": water_bills.get(month),
+            }
+        )
+
+    baseline_avg, _baseline_months = _compute_baseline(months)
+
+    for m in months:
+        if m["irrigation_minutes"] > 0 and m["water_bill"] is not None and baseline_avg is not None:
+            est_cost = max(0, round(m["water_bill"] - baseline_avg, 2))
+            cost_per_min = round(est_cost / m["irrigation_minutes"], 4) if m["irrigation_minutes"] > 0 else None
+            m["estimated_irrigation_cost"] = est_cost
+            m["cost_per_minute"] = cost_per_min
+        else:
+            m["estimated_irrigation_cost"] = None
+            m["cost_per_minute"] = None
+
+    return months
+
+
 def get_water_usage_report(config, year=None):
-    """Correlate monthly irrigation runtime with water bills.
+    """Correlate monthly irrigation runtime with the authoritative cost-per-minute.
+
+    Per-month and average irrigation cost are `irrigation_minutes * cost_per_minute`,
+    where `cost_per_minute` is the same authoritative value `irrigation_budget` and
+    `irrigation_pace` use (`_compute_dynamic_cpm` in `irrigation_analytics.py`,
+    issue #42 / #44) -- not a regression against imported water bills. The
+    per-month `water_bill` field is kept only as informational context; it no
+    longer feeds the cost or cost-per-minute figures.
 
     Returns structured dict for CLI display or MCP JSON output.
     """
+    # Local import to avoid a circular import at module load time:
+    # irrigation_analytics.py imports helpers from this module at the top
+    # level, so this module cannot import irrigation_analytics.py at its own
+    # top level. By call time both modules are already fully loaded.
+    from lawnops.db.irrigation_analytics import _compute_dynamic_cpm
+
     water_bills = _get_water_bills(config)
     irrigation = _get_irrigation_monthly(config, year)
 
@@ -137,48 +231,31 @@ def get_water_usage_report(config, year=None):
             }
         )
 
-    # Calculate baseline from months with zero/minimal irrigation and a bill
-    # Minimal = less than 5 minutes (winterization tests, etc.)
-    baseline_candidates = []
-    for m in months:
-        if m["irrigation_minutes"] < 5 and m["water_bill"] is not None:
-            baseline_candidates.append((m["month"], m["water_bill"]))
+    # Baseline is still informational context (surfaced in the report), even
+    # though it no longer drives the irrigation cost figures below.
+    baseline_avg, baseline_months = _compute_baseline(months)
 
-    # Remove outliers (>2x median) to avoid double-payment months skewing baseline
-    if len(baseline_candidates) >= 3:
-        bills_sorted = sorted(b for _, b in baseline_candidates)
-        median = bills_sorted[len(bills_sorted) // 2]
-        baseline_filtered = [(m, b) for m, b in baseline_candidates if b <= median * 1.75]
-    else:
-        baseline_filtered = baseline_candidates
+    cpm_data = _compute_dynamic_cpm(config)
+    cpm = cpm_data["cpm"]
 
-    baseline_months = [m for m, _ in baseline_filtered]
-    baseline_bills = [b for _, b in baseline_filtered]
-    baseline_avg = round(sum(baseline_bills) / len(baseline_bills), 2) if baseline_bills else None
-
-    # Calculate irrigation cost estimates
-    total_irr_minutes = 0
-    total_irr_cost = 0
+    # Calculate irrigation cost from the authoritative config cost-per-minute
+    total_irr_minutes = 0.0
+    total_irr_cost = 0.0
 
     for m in months:
-        if m["irrigation_minutes"] > 0 and m["water_bill"] is not None and baseline_avg is not None:
-            est_cost = max(0, round(m["water_bill"] - baseline_avg, 2))
-            cost_per_min = round(est_cost / m["irrigation_minutes"], 4) if m["irrigation_minutes"] > 0 else None
+        if m["irrigation_minutes"] > 0:
+            est_cost = round(m["irrigation_minutes"] * cpm, 2)
             m["is_baseline"] = False
             m["estimated_irrigation_cost"] = est_cost
-            m["cost_per_minute"] = cost_per_min
+            m["cost_per_minute"] = cpm
             total_irr_minutes += m["irrigation_minutes"]
             total_irr_cost += est_cost
         else:
-            m["is_baseline"] = m["irrigation_minutes"] == 0
+            m["is_baseline"] = True
             m["estimated_irrigation_cost"] = None
             m["cost_per_minute"] = None
-            if m["irrigation_minutes"] > 0:
-                total_irr_minutes += m["irrigation_minutes"]
 
-    avg_cost_per_min = (
-        round(total_irr_cost / total_irr_minutes, 4) if total_irr_minutes > 0 and total_irr_cost > 0 else None
-    )
+    avg_cost_per_min = cpm if total_irr_minutes > 0 else None
     total_gallons = round(sum(m.get("estimated_gallons", 0.0) for m in months), 1)
 
     return {
@@ -190,4 +267,5 @@ def get_water_usage_report(config, year=None):
         "total_estimated_gallons": total_gallons,
         "total_estimated_irrigation_cost": round(total_irr_cost, 2),
         "avg_cost_per_minute": avg_cost_per_min,
+        "cpm_source": cpm_data["source"],
     }

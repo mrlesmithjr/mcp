@@ -1111,9 +1111,10 @@ def et_recommendations(year: int | None = None) -> str:
     configured, it contains the ET% needed to stay within it this month using
     schedule-based projection and the configured `hydrawise.budget.cost_per_minute`
     (authoritative; cpm_source reads "config" when set). The legacy recommendations
-    list (avg_cost_per_minute vs historical bill months) is separate, backward-
-    looking bill analysis and is secondary context. Advisory only - adjustments
-    must be made in the Hydrawise app.
+    list compares each month's cost-per-minute against avg_cost_per_minute, both
+    now the same authoritative config value (issue #44), so it no longer flags
+    disproportionately expensive months from billing data; kept for output-shape
+    compatibility. Advisory only - adjustments must be made in the Hydrawise app.
 
     Returns JSON: {year, avg_cost_per_minute, months[], recommendations[],
     potential_savings, budget_based_recommendation, cpm_source}
@@ -1449,7 +1450,14 @@ def irrigation_zone_update(zone: int, fixed_watering_adjustment: int) -> str:
 
 @mcp.tool(annotations=_READ_LOCAL)
 def water_usage_report(year: int | None = None) -> str:
-    """Monthly irrigation runtime correlated with water bills to estimate irrigation cost."""
+    """Monthly irrigation runtime with cost estimated from the authoritative config cost-per-minute.
+
+    Per-month and average cost-per-minute come from `hydrawise.budget.cost_per_minute`
+    (cpm_source "config" when set; see `irrigation_budget`) -- the same source
+    `irrigation_budget` and `irrigation_pace` use (issue #42/#44), not a
+    regression against imported water bills. The per-month `water_bill` field
+    is kept as informational context only.
+    """
     try:
         from lawnops.db.water_usage import get_water_usage_report
 
