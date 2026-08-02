@@ -19,10 +19,7 @@ def _usage_report(months):
 
 def _qualifying_months(cpm=0.10, count=3):
     """Three qualifying bill months (irrigation_minutes > 30, not current month)."""
-    return [
-        {"month": f"2025-{m:02d}", "cost_per_minute": cpm, "irrigation_minutes": 500}
-        for m in range(1, count + 1)
-    ]
+    return [{"month": f"2025-{m:02d}", "cost_per_minute": cpm, "irrigation_minutes": 500} for m in range(1, count + 1)]
 
 
 @pytest.fixture()
