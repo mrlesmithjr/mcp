@@ -7,7 +7,7 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 
 from lawnops.db.connection import get_db
-from lawnops.db.water_usage import _get_irrigation_monthly, _get_water_bills, get_water_usage_report
+from lawnops.db.water_usage import _bill_regressed_months, _get_irrigation_monthly, _get_water_bills
 
 
 def _get_current_month_irrigation(config):
@@ -178,13 +178,18 @@ def _weighted_cpm_from_bills(config) -> dict:
     (sufficient irrigation data, not the current month) with weights
     0.5/0.3/0.2. Returns `cpm: None` when fewer than 2 qualifying months exist
     or the weighted result is an outlier (<=0 or > $1/min).
+
+    Sources bill-regressed months from `_bill_regressed_months` rather than
+    `get_water_usage_report` (issue #44): the latter now derives its cost
+    figures from this same function via `_compute_dynamic_cpm`, so calling it
+    here would recurse.
     """
     try:
-        usage = get_water_usage_report(config)
+        months = _bill_regressed_months(config)
         current_month = datetime.now().strftime("%Y-%m")
         qualifying = [
             m
-            for m in usage["months"]
+            for m in months
             if m.get("cost_per_minute") is not None
             and m["cost_per_minute"] > 0
             and m["irrigation_minutes"] > 30
@@ -590,8 +595,15 @@ def zone_analysis(config, year=None, month=None):
 def et_recommendations(config, year=None):
     """Analyze cost-per-minute by month against ET percentages.
 
-    Recommends reductions for expensive months. Advisory only - user must adjust
-    in Hydrawise app.
+    `budget_based_recommendation` is the primary, forward-looking output: it
+    uses the authoritative config cost-per-minute (`_compute_dynamic_cpm`,
+    issue #42) against the current month's projected minutes. The legacy
+    `months`/`recommendations` list compares each month's `cost_per_minute`
+    against `avg_cost_per_minute` from `get_water_usage_report`; since issue
+    #44 both are the same authoritative config value for every month with
+    runtime, so this list is effectively inert (no month can register as
+    disproportionately expensive anymore) and kept only for output-shape
+    backward compatibility. Advisory only - user must adjust in Hydrawise app.
     """
     from lawnops.db.water_usage import get_water_usage_report
 
