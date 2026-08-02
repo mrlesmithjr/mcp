@@ -40,6 +40,15 @@ hydrawise:
   # Example zone notes:
   #   1: "Front yard rotors"
   #   2: "Back yard sprays"
+  budget:
+    # Authoritative $/minute used for irrigation_budget, irrigation_pace, and ET
+    # cost projections. Calibrate this from your own water bills (rate x usage
+    # against logged irrigation runtime for the same billing period) and update
+    # it by hand whenever a new bill lands - there is no automatic recalibration.
+    cost_per_minute: 0.12
+    # monthly_minutes: 600   # or
+    # monthly_dollars: 150
+    # alert_pct: 80
 
 # Mowing service defaults
 mowing:

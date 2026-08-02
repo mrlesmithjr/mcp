@@ -170,18 +170,15 @@ def _project_month(config, current_minutes: float, day_of_month: int, days_in_mo
     }
 
 
-def _compute_dynamic_cpm(config) -> dict:
+def _weighted_cpm_from_bills(config) -> dict:
     """Compute a weighted cost-per-minute from recent water bills.
 
-    Uses the three most recent qualifying months (sufficient irrigation data,
-    not the current month) with weights 0.5/0.3/0.2. Falls back to config
-    value when fewer than 2 qualifying months exist.
+    Diagnostic only - this value is never used directly for cost projections
+    (see `_compute_dynamic_cpm`). Uses the three most recent qualifying months
+    (sufficient irrigation data, not the current month) with weights
+    0.5/0.3/0.2. Returns `cpm: None` when fewer than 2 qualifying months exist
+    or the weighted result is an outlier (<=0 or > $1/min).
     """
-    hydrawise_cfg = config.get("hydrawise", {})
-    budget_cfg = hydrawise_cfg.get("budget", {})
-    config_cpm = budget_cfg.get("cost_per_minute", 0.12)
-
-    fallback_warning = None
     try:
         usage = get_water_usage_report(config)
         current_month = datetime.now().strftime("%Y-%m")
@@ -196,17 +193,10 @@ def _compute_dynamic_cpm(config) -> dict:
         qualifying.sort(key=lambda m: m["month"], reverse=True)
         qualifying = qualifying[:3]
     except Exception as e:
-        qualifying = []
-        fallback_warning = str(e)
+        return {"cpm": None, "months_used": 0, "months": [], "warning": str(e)}
 
     if len(qualifying) < 2:
-        return {
-            "cpm": config_cpm,
-            "source": "config",
-            "months_used": 0,
-            "months": [],
-            "warning": fallback_warning,
-        }
+        return {"cpm": None, "months_used": 0, "months": [], "warning": None}
 
     weights = [0.5, 0.3, 0.2][: len(qualifying)]
     weight_sum = sum(weights)
@@ -214,13 +204,77 @@ def _compute_dynamic_cpm(config) -> dict:
     weighted_cpm = round(weighted_cpm, 4)
 
     if weighted_cpm <= 0 or weighted_cpm > 1.0:
-        return {"cpm": config_cpm, "source": "config_fallback_outlier", "months_used": 0, "months": []}
+        return {"cpm": None, "months_used": 0, "months": [], "warning": f"weighted CPM outlier: {weighted_cpm}"}
 
     return {
         "cpm": weighted_cpm,
-        "source": "computed",
         "months_used": len(qualifying),
         "months": [m["month"] for m in qualifying],
+        "warning": None,
+    }
+
+
+def _compute_dynamic_cpm(config) -> dict:
+    """Return the authoritative cost-per-minute for irrigation cost projections.
+
+    `hydrawise.budget.cost_per_minute` in config is authoritative whenever it
+    is set to a positive value: it is used directly for `irrigation_budget`,
+    `irrigation_pace`, and the ET projections, and `source` reads "config". The
+    bill-derived weighted CPM (see `_weighted_cpm_from_bills`) is surfaced only
+    as a diagnostic `observed_cpm_from_bills` field for comparison - it is
+    never used to compute a cost projection.
+
+    A configured value <= 0 (e.g. an accidental `0` or a negative number) is
+    rejected rather than trusted: it would silently zero out or invert every
+    cost projection downstream (budgets never trip, `irrigation check` never
+    fires, YNAB's estimated bill drops the irrigation line). Rejection falls
+    through to the same "no config value set" path below, with a `warning`
+    explaining why, following the outlier-rejection convention already used
+    by `_weighted_cpm_from_bills`.
+
+    Falls back to the bill-derived computation (source "computed") when no
+    valid config value is set, and to a hardcoded 0.12 default (source
+    "default") when neither a valid config value nor enough billing history
+    exists.
+    """
+    hydrawise_cfg = config.get("hydrawise", {})
+    budget_cfg = hydrawise_cfg.get("budget", {})
+    config_cpm = budget_cfg.get("cost_per_minute")
+
+    bills = _weighted_cpm_from_bills(config)
+
+    rejection_warning = None
+    if config_cpm is not None and config_cpm <= 0:
+        rejection_warning = f"configured cost_per_minute {config_cpm} is not positive; ignoring"
+        config_cpm = None
+
+    if config_cpm is not None:
+        return {
+            "cpm": config_cpm,
+            "source": "config",
+            "months_used": bills["months_used"],
+            "months": bills["months"],
+            "observed_cpm_from_bills": bills["cpm"],
+            "warning": bills["warning"],
+        }
+
+    if bills["cpm"] is None:
+        return {
+            "cpm": 0.12,
+            "source": "default",
+            "months_used": 0,
+            "months": [],
+            "observed_cpm_from_bills": None,
+            "warning": rejection_warning or bills["warning"],
+        }
+
+    return {
+        "cpm": bills["cpm"],
+        "source": "computed",
+        "months_used": bills["months_used"],
+        "months": bills["months"],
+        "observed_cpm_from_bills": bills["cpm"],
+        "warning": rejection_warning,
     }
 
 
@@ -259,7 +313,7 @@ def irrigation_pace(config):
     else:
         historical_avg = None
 
-    # Cost projection - use dynamic CPM derived from recent bills
+    # Cost projection - use the config-authoritative cost-per-minute
     hydrawise_cfg = config.get("hydrawise", {})
     pace_cfg = hydrawise_cfg.get("pace", {})
     cpm_data = _compute_dynamic_cpm(config)
@@ -293,6 +347,7 @@ def irrigation_pace(config):
         "projection_method": projection["projection_method"],
         "projection_reliability": projection["projection_reliability"],
         "cpm_source": cpm_data["source"],
+        "observed_cpm_from_bills": cpm_data["observed_cpm_from_bills"],
         "last_year_minutes": last_year_data["minutes"],
         "last_year_runs": last_year_data["runs"],
         "historical_avg_minutes": historical_avg,
@@ -328,7 +383,7 @@ def irrigation_budget(config):
     projection = _project_month(config, current["minutes"], day_of_month, days_in_month)
     projected_minutes = projection["projected_minutes"]
 
-    # Use dynamic CPM derived from recent bills
+    # Use the config-authoritative cost-per-minute
     cpm_data = _compute_dynamic_cpm(config)
     cost_per_min = cpm_data["cpm"]
 
@@ -429,6 +484,7 @@ def irrigation_budget(config):
         "projection_method": projection["projection_method"],
         "projection_reliability": projection["projection_reliability"],
         "cpm_source": cpm_data["source"],
+        "observed_cpm_from_bills": cpm_data["observed_cpm_from_bills"],
         "pct_used": pct_used,
         "remaining": remaining,
         "cost_per_minute": cost_per_min,
@@ -634,6 +690,7 @@ def et_recommendations(config, year=None):
                 "monthly_dollars_limit": monthly_dollars_limit,
                 "cpm": cpm,
                 "cpm_source": cpm_data["source"],
+                "observed_cpm_from_bills": cpm_data["observed_cpm_from_bills"],
                 "projected_full_month_minutes": projected_full_month_minutes,
                 "projection_method": curr_projection["projection_method"],
                 "projection_reliability": curr_projection["projection_reliability"],
