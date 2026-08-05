@@ -705,6 +705,41 @@ def execute_apply(plan: dict) -> dict:
     }
 
 
+def has_active_program(ctrl, program_zone_nums):
+    """Determine whether the controller currently has an active irrigation program.
+
+    Deployment-agnostic scheduling-authority signal (issue #53): derived only
+    from live controller state, never hardcoded IPs/entities/dates/thresholds.
+
+    Active means: at least one standard program has zones (program_zone_nums
+    is non-empty) AND at least one of those program zones is not currently
+    suspended. This covers both ways a deployment can retire Hydrawise as the
+    scheduler: programs removed entirely (program_zone_nums is empty) or left
+    in place but suspended (every program zone has an active suspension).
+    Hydrawise-scheduler users -- unsuspended zones in a real program -- are
+    unaffected.
+
+    Args:
+        ctrl: pydrawise Controller object (has .zones; each zone has
+            .number.value and .suspensions).
+        program_zone_nums: iterable of zone numbers that belong to at least
+            one standard program (e.g. flattened from get_status()'s
+            programs_dict "zones" lists, or get_programs()'s per-program
+            "zones" list of {zone_num: ...} dicts).
+
+    Returns:
+        bool
+    """
+    zone_nums = set(program_zone_nums)
+    if not zone_nums:
+        return False
+
+    suspended_zone_nums = {
+        zone.number.value for zone in ctrl.zones if zone.number.value in zone_nums and zone.suspensions
+    }
+    return len(zone_nums - suspended_zone_nums) > 0
+
+
 def get_history(days=7):
     """Get recent watering history from Hydrawise.
 

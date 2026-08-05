@@ -133,11 +133,57 @@ def _derive_schedule_params(config) -> dict | None:
     }
 
 
+# Floor for the recency guard's staleness window (code review, issue #53).
+# A single derived cycle (period_days, clamped 1-14) is too tight: a normal
+# rain/wind/freeze skip streak on a genuinely active Hydrawise-scheduler
+# setup with a short 2-4 day cycle can easily exceed it without the
+# controller being retired. Multiplying period_days by 4 (so a multi-cycle
+# skip streak is tolerated) and flooring at 21 days (three weeks - well
+# beyond any plausible weather-driven skip streak, even for longer cycles)
+# means the guard only fires on genuinely stale data: a program suspended or
+# removed, not a rough week or two of bad weather.
+_STALENESS_FLOOR_DAYS = 21
+_STALENESS_CYCLE_MULTIPLIER = 4
+
+
+def _has_recent_runs(config, period_days: float) -> bool:
+    """Check whether any irrigation run has landed within the staleness window.
+
+    DB-only recency guard (issue #53) for `_project_month`'s schedule-based
+    branch: `_derive_schedule_params` looks back up to 90 days, so a program
+    retired (or a controller no longer scheduling anything, e.g. an externally
+    -driven setup) partway through that window can still yield valid-looking
+    params derived entirely from old, no-longer-representative rows. The
+    staleness window is `max(period_days * 4, 21)` days, not the raw derived
+    cycle length -- see `_STALENESS_FLOOR_DAYS` / `_STALENESS_CYCLE_MULTIPLIER`
+    for why a single cycle is too tight. If nothing has run within that
+    window, the schedule is not current -- callers should degrade to
+    actual-only rather than extrapolating stale rows forward. No live
+    controller dependency; this is a plain query against locally logged runs.
+    """
+    conn = get_db(config)
+    staleness_window_days = max(period_days * _STALENESS_CYCLE_MULTIPLIER, _STALENESS_FLOOR_DAYS)
+    cutoff = (datetime.now() - timedelta(days=staleness_window_days)).strftime("%Y-%m-%d")
+    try:
+        row = conn.execute(
+            "SELECT COUNT(*) as c FROM irrigation_runs WHERE date >= ?",
+            (cutoff,),
+        ).fetchone()
+        return (row["c"] or 0) > 0
+    finally:
+        conn.close()
+
+
 def _project_month(config, current_minutes: float, day_of_month: int, days_in_month: int) -> dict:
     """Project full-month irrigation minutes from current progress.
 
-    Uses schedule-based model when 90-day run history is available; falls back
-    to linear pace extrapolation. Always includes daily_rate for display.
+    Uses schedule-based model when 90-day run history is available and at
+    least one run has landed within the staleness window (the recency guard,
+    issue #53 - `max(period_days * 4, 21)` days, wide enough to tolerate a
+    normal multi-day weather skip streak on an active scheduler; otherwise
+    the schedule params could be derived entirely from stale, pre-retirement
+    rows). Falls back to linear pace extrapolation, or to actual-only when
+    the recency guard fails. Always includes daily_rate for display.
     """
     # Always compute linear for fallback / display
     daily_rate = round(current_minutes / day_of_month, 2) if day_of_month > 0 else 0.0
@@ -145,6 +191,15 @@ def _project_month(config, current_minutes: float, day_of_month: int, days_in_mo
 
     params = _derive_schedule_params(config)
     if params is not None:
+        if not _has_recent_runs(config, params["period_days"]):
+            return {
+                "projected_minutes": round(current_minutes, 1),
+                "projection_method": "actual_only",
+                "projection_reliability": "low",
+                "schedule_params": params,
+                "daily_rate_minutes": daily_rate,
+            }
+
         days_remaining = days_in_month - day_of_month
         remaining_runs = (days_remaining / params["period_days"]) * params["zone_count"]
         remaining_minutes = remaining_runs * params["avg_run_duration_min"]

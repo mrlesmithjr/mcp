@@ -133,12 +133,29 @@ def sync_skipped_runs(config, days=30):
     Uses program cadence from Hydrawise to calculate expected run dates, compares
     against actual runs in irrigation_runs, fetches historical weather for gaps,
     then infers which predictive watering condition caused the skip.
+
+    Gated on `has_active_program` (issue #53): skip inference assumes Hydrawise
+    is the active scheduler, which is not true for every deployment (programs
+    suspended or removed in favor of external scheduling). When no active
+    program exists, this writes zero `irrigation_skips` rows and never reaches
+    `_infer_skip_reason` - Hydrawise-scheduler users are unaffected since their
+    controller always reports an active program.
+
+    Returns (count, active) where `active` reflects the live controller state
+    that gated this run. The only caller (`irrigation_history`) uses `active`
+    to also gate its read of previously-stored skip rows.
     """
-    from lawnops.irrigation import get_programs
+    from lawnops.irrigation import get_programs, has_active_program
     from lawnops.weather import fetch_historical_daily
 
     conn = get_db(config)
-    _ctrl, programs = get_programs()
+    ctrl, programs = get_programs()
+
+    program_zone_nums = {z["zone_num"] for prog in programs for z in prog.get("zones", [])}
+    active = has_active_program(ctrl, program_zone_nums)
+    if not active:
+        conn.close()
+        return 0, False
 
     window_end = datetime.now().date()
     window_start = window_end - timedelta(days=days)
@@ -216,7 +233,7 @@ def sync_skipped_runs(config, days=30):
 
     conn.commit()
     conn.close()
-    return skip_count
+    return skip_count, True
 
 
 def get_skip_history_from_db(config, days=30):

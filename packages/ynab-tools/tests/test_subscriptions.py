@@ -42,6 +42,25 @@ def today_minus(days: int) -> str:
     return (date.today() - timedelta(days=days)).isoformat()
 
 
+def month_anchor(months_back: int) -> str:
+    """Return the ISO date for day 1 of the month `months_back` months before today.
+
+    Anchoring to day 1 of the target month (rather than a fixed day offset from
+    today) guarantees a distinct calendar month per index regardless of what day
+    of the month `today` is, and day 1 of the current month is always <= today so
+    this never produces a future date. A fixed day-offset step (e.g. i * 30) can
+    collide within the same calendar month near month boundaries -- e.g. on the
+    5th of a month, today_minus(5) and today_minus(35) both land in the prior
+    month.
+    """
+    year = date.today().year
+    month = date.today().month - months_back
+    while month <= 0:
+        month += 12
+        year -= 1
+    return date(year, month, 1).isoformat()
+
+
 def test_monthly_frequency(tmp_path):
     conn = _make_db(tmp_path)
     for i in range(5, 0, -1):
@@ -148,7 +167,7 @@ def test_canonical_merge(tmp_path):
 
 def test_monthly_data_coverage(tmp_path):
     conn = _make_db(tmp_path)
-    dates = [today_minus(5), today_minus(35), today_minus(65)]
+    dates = [month_anchor(0), month_anchor(1), month_anchor(2)]
     for d in dates:
         _insert(conn, payee="Dropbox", txn_date=d, amount=11.99)
 

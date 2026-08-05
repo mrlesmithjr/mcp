@@ -706,8 +706,17 @@ def mix_calculator(product: str, tank: float = 4.0, rate: str | None = None) -> 
 
 
 def _serialize_irrigation_status(ctrl, sensors, programs):
-    """Convert pydrawise controller objects to a serializable dict."""
+    """Convert pydrawise controller objects to a serializable dict.
+
+    Adds a `scheduling_note` key (issue #53) when `has_active_program` finds
+    no active Hydrawise program - composed entirely from live counts (zones
+    suspended/total, program presence), never hardcoded. When a program is
+    active, no `scheduling_note` key is added at all, so Hydrawise-scheduler
+    output is byte-for-byte unchanged from before this change.
+    """
     from datetime import datetime
+
+    from lawnops.irrigation import has_active_program
 
     zones = []
     for zone in ctrl.zones:
@@ -771,7 +780,7 @@ def _serialize_irrigation_status(ctrl, sensors, programs):
             }
         )
 
-    return {
+    result = {
         "controller": {
             "name": ctrl.name,
             "online": ctrl.online,
@@ -784,6 +793,23 @@ def _serialize_irrigation_status(ctrl, sensors, programs):
         "sensors": sensor_list,
     }
 
+    program_zone_nums = {znum for prog in programs.values() for znum in prog["zones"]}
+    if not has_active_program(ctrl, program_zone_nums):
+        total_zones = len(ctrl.zones)
+        suspended_zones = sum(1 for zone in ctrl.zones if zone.suspensions)
+        if not programs:
+            note = "No Hydrawise program is configured on this controller."
+        elif total_zones and suspended_zones >= total_zones:
+            note = f"All {total_zones} zones are suspended; Hydrawise is not the active irrigation scheduler."
+        else:
+            note = (
+                f"{suspended_zones}/{total_zones} zones suspended and no unsuspended zone is in an "
+                "active program; Hydrawise is not the active irrigation scheduler."
+            )
+        result["scheduling_note"] = note
+
+    return result
+
 
 @mcp.tool(annotations=_READ_EXTERNAL)
 def irrigation_status() -> str:
@@ -792,7 +818,13 @@ def irrigation_status() -> str:
     Returns JSON: {controller: {name, online, firmware, status, last_contact},
     zones: [{number, name, status, next_run, suspended_until?}],
     programs: [{name, start_time, period_days, zones, current_month_pct}],
-    sensors: [{name, status}]}
+    sensors: [{name, status}], scheduling_note?}
+
+    `scheduling_note` (issue #53) only appears when no active Hydrawise
+    program is detected from live controller state (all zones suspended, or
+    no program configured) - a read-only, neutral note, not a fault. It is
+    absent entirely when a program is active, so Hydrawise-scheduler output
+    is unchanged from before this field existed.
     """
     try:
         from lawnops.irrigation import get_status
@@ -809,11 +841,18 @@ def irrigation_history(days: int = 7) -> str:
 
     Queries local database for full history (unlimited lookback). Always syncs
     the last 2 days from the live Hydrawise API first to catch runs completed
-    since the last DB sync (the API has a short reporting delay). Falls back to
-    a deeper sync if the DB is significantly stale.
+    since the last DB sync, falling back to a deeper sync if the DB is stale.
+    This is Hydrawise's own cloud-reported run log, not necessarily a complete
+    record of watering that happened if something else is scheduling it.
 
-    Includes inferred skip entries for expected runs that did not occur, with
-    skip reasons derived from historical weather data (rain, wind thresholds).
+    Skip entries (expected runs that did not occur, with reasons inferred from
+    historical weather) are only produced and returned when the controller
+    reports an active Hydrawise program (issue #53) - see
+    `irrigation.has_active_program`. When no active program exists (suspended,
+    removed, or the controller is unreachable), no skip entries appear, even if
+    skip rows from an earlier active period exist in the local database; the
+    output's `active_program` flag and `note` say so explicitly instead of
+    presenting a stale or incomplete skip picture as current.
     """
     try:
         from datetime import datetime
@@ -852,13 +891,18 @@ def irrigation_history(days: int = 7) -> str:
             except Exception:
                 pass  # API unreachable - return what we have from DB
 
-        # Detect and store skipped runs, then merge into output
+        # active_program requires a live read of controller/program state.
+        # Fail closed (no skips asserted) if that can't be determined, e.g.
+        # the controller is unreachable.
         try:
-            sync_skipped_runs(cfg, days=days)
+            _skip_count, active = sync_skipped_runs(cfg, days=days)
         except Exception:
-            pass  # Non-fatal - skip inference requires weather API
+            active = False
 
-        skip_entries = get_skip_history_from_db(cfg, days)
+        # Gate the read on the same signal as the write - a previously-synced
+        # skip row from before a program was suspended/removed must not
+        # resurface once there's no active program to attribute it to.
+        skip_entries = get_skip_history_from_db(cfg, days) if active else []
 
         # Tag completed runs with type for consistency
         for e in entries:
@@ -870,12 +914,22 @@ def irrigation_history(days: int = 7) -> str:
             reverse=True,
         )
 
+        note = (
+            "Skip inference is active: the controller reports an active Hydrawise program."
+            if active
+            else "No active Hydrawise program detected, so skip inference is disabled. "
+            "Entries below are Hydrawise's own reported run log only, which may not "
+            "reflect watering scheduled outside Hydrawise."
+        )
+
         return json.dumps(
             {
                 "days": days,
                 "entries": all_entries,
                 "runs": len(entries),
                 "skips": len(skip_entries),
+                "active_program": active,
+                "note": note,
                 "source": "database",
             }
         )
