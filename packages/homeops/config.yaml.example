@@ -40,3 +40,53 @@ categories:
     - repair
     - supplies
     - service
+
+# Home log backend (issue #58): where tasks, task_log, pest_treatments,
+# costs, utility_bills, providers, and appliances are stored. Read/write MCP
+# tools (task_add/delete/done/pause/resume, task_list/history/overdue,
+# pest_add/delete/history, cost_add/delete/summary/history,
+# utility_add/delete/summary/trend, provider_list/detail, appliance_list/
+# alerts, sinking_fund_plan, budget_overview, home_status) all go through
+# this backend. Omit this whole block to keep the zero-config default
+# (sqlite). HVAC snapshots and the YNAB bridge's read-only-toward-YNAB
+# behavior are unaffected -- they are out of scope for this block.
+home_log:
+  backend: sqlite          # "sqlite" (default, self-contained) | "markdown" (external file)
+  markdown:                # consulted only when backend: markdown
+    # Default file for every entity not overridden in `entities` below.
+    # Obsidian-vault-relative or an absolute path; ~ is expanded.
+    note: "~/Obsidian/Personal/House/Home Log.md"
+    # Optional: route an entity to its own file instead of `note`.
+    # entities:
+    #   appliances: "~/Obsidian/Personal/House/Appliances.md"
+    #   providers: "~/Obsidian/Personal/House/Providers.md"
+    # Optional: override the "## Heading" used per entity (default shown).
+    # section_headings:
+    #   tasks: "Tasks"
+    #   task_log: "Task Log"
+    #   pest_treatments: "Pest"
+    #   costs: "Costs"
+    #   utility_bills: "Utilities"
+    #   providers: "Providers"
+    #   appliances: "Appliances"
+    # Display format for date-typed columns in the markdown table. Rows are
+    # always stored/filtered internally as YYYY-MM-DD regardless of this
+    # setting -- it only controls how dates are rendered in the file.
+    # utility_bills.bill_date (YYYY-MM) and appliances.purchase_date/
+    # warranty_end (YYYY-MM-DD or YYYY-MM) are passed through as-is and are
+    # not affected by this setting.
+    date_format: "%Y-%m-%d"
+  # Note schema (fixed column set/order per entity -- homeops owns the table
+  # contract so parsing stays deterministic; only backend/file/heading/date
+  # format above are configurable):
+  #   ## Tasks:      | name | category | interval_days | last_done | next_due | active | notes |
+  #   ## Task Log:   | task | date | cost | provider | notes |
+  #   ## Pest:       | date | area | product | method | cost | notes |
+  #   ## Costs:      | date | category | amount | provider | description | source | notes |
+  #   ## Utilities:  | bill_date | type | amount | usage | notes |
+  #   ## Providers:  | name | category | phone | email | typical_cost | active | notes |
+  #   ## Appliances: | name | category | brand | model | purchase_date | warranty_end | expected_lifespan_years | replacement_cost | location | notes |
+  #
+  # Migration: run `homeops db log-export` (add `--preview` to check first)
+  # to seed the markdown file(s) from existing SQLite rows before switching
+  # `backend` from sqlite to markdown. Idempotent -- safe to re-run.

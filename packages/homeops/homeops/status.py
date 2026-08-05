@@ -1,13 +1,14 @@
-"""Status dashboard - unified view of all homeops data."""
+"""Status dashboard - unified view of all homeops data.
+
+Routed through homeops.log_store/log_compute (issue #58) so `home_status`
+(both the MCP tool and the `homeops status` CLI command, which share this
+module) reflects whichever `home_log.backend` is configured, instead of
+always reading SQLite directly.
+"""
 
 from datetime import date
 
-from homeops.db.appliances import get_aging_appliances, get_expiring_warranties, list_appliances
-from homeops.db.costs import get_cost_summary
-from homeops.db.pest import list_pest_history
-from homeops.db.providers import list_providers
-from homeops.db.tasks import list_tasks
-from homeops.db.utilities import get_utility_summary
+from homeops import log_compute, log_store
 
 
 def get_status(config):
@@ -15,20 +16,20 @@ def get_status(config):
     today = date.today()
     year = str(today.year)
 
-    tasks = list_tasks(config)
+    tasks = log_compute.list_tasks(log_store.read_table(config, "tasks"))
     overdue = [t for t in tasks if t.get("overdue")]
     due_soon = [t for t in tasks if not t.get("overdue") and t.get("days_until") is not None and t["days_until"] <= 14]
 
-    appliances = list_appliances(config)
-    expiring_warranties = get_expiring_warranties(config)
-    aging = get_aging_appliances(config)
+    appliances = log_compute.list_appliances(log_store.read_table(config, "appliances"))
+    expiring_warranties = log_compute.get_expiring_warranties(appliances)
+    aging = log_compute.get_aging_appliances(appliances)
 
-    pest_recent = list_pest_history(config, limit=5)
-    providers = list_providers(config)
-    cost_summary = get_cost_summary(config, year)
-    utility_summary = get_utility_summary(config, year)
+    pest_recent = log_compute.list_pest_history(log_store.read_table(config, "pest_treatments"), limit=5)
+    providers = log_compute.list_providers(log_store.read_table(config, "providers"))
+    cost_summary = log_compute.get_cost_summary(log_store.read_table(config, "costs"), year)
+    utility_summary = log_compute.get_utility_summary(log_store.read_table(config, "utility_bills"), year)
 
-    ytd_costs = sum(c["total"] for c in cost_summary) if cost_summary else 0
+    ytd_costs = sum(c["total"] or 0 for c in cost_summary) if cost_summary else 0
 
     return {
         "date": today.isoformat(),
