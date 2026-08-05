@@ -63,7 +63,6 @@ jobs:
         run: |
           uv sync --extra dashboard \
             --package mrlesmithjr-mcp-common \
-            --package mrlesmithjr-mcp-flightops \
             --package mrlesmithjr-mcp-homeops \
             --package mrlesmithjr-mcp-launchd-tools \
             --package mrlesmithjr-mcp-lawnops \
@@ -84,7 +83,7 @@ jobs:
         # regardless of #96's root cause.
         run: |
           set -e
-          for pkg in mcp-common flightops homeops launchd-tools lawnops \
+          for pkg in mcp-common homeops launchd-tools lawnops \
                      nextdns-tools obsidian-search-tools sheets-tools \
                      unifi-tools weather-tools ynab-tools; do
             echo "::group::pytest packages/$pkg"

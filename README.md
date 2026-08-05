@@ -12,7 +12,6 @@ Fourteen tools ship as marketplace plugins. One package supports them and is not
 |---------|---------|--------------|
 | `apple-eventkit-tools` | 0.2.4 | Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit |
 | `contacts-tools` | 0.2.3 | Contacts read/write via the Google People API |
-| `flightops` | 0.1.7 | Flight price tracking (Google Flights, no API key) |
 | `homeops` | 0.1.26 | Home maintenance operations: tasks, pest, services, HVAC |
 | `imessage-tools` | 0.1.9 | Read iMessage chats and send via AppleScript |
 | `launchd-tools` | 0.1.4 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
