@@ -19,5 +19,9 @@ if [ -z "${OBSIDIAN_VAULT_PATH:-}" ]; then
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting vault reindex (vault: ${OBSIDIAN_VAULT_PATH})..."
-"${HOME}/.local/bin/obsidian-search-tools" reindex
+# --skip-if-fresh: RunAtLoad (login) and a StartCalendarInterval fire can land
+# close together (e.g. login right after a scheduled 06:00 run); this guard
+# skips the rebuild if the index is younger than OBSIDIAN_REINDEX_STALENESS_HOURS
+# (default 2h) so the ~130MB embedding model isn't loaded twice back-to-back.
+"${HOME}/.local/bin/obsidian-search-tools" reindex --skip-if-fresh
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Reindex complete."

@@ -82,13 +82,20 @@ The SessionStart hook (`hooks/install_deps.sh`) runs on each session start. It:
    CLIs -- every console script not ending in `-mcp` -- into `~/.local/bin` so they
    are on PATH. This is what makes `lawnops`, `homeops`, `ynab` (incl. `configure`),
    etc. runnable in a terminal.
-4. On a (re)build only, installs any LaunchAgents shipped under the plugin's
+4. On a (re)build, installs any LaunchAgents shipped under the plugin's
    `launchagents/` dir: copies the ops scripts to `~/.local/share/<tool>/`, renders
    `__HOME__` in the plist templates into `~/Library/LaunchAgents/`, and always
    `launchctl unload`s (failure suppressed) then `launchctl load -w`s each --
    never skip-if-already-loaded, since launchd caches the job definition it was
    loaded with and a plist rewritten in place would otherwise keep running under
-   the stale in-memory `ProgramArguments` (issue #151).
+   the stale in-memory `ProgramArguments` (issue #151). A plugin that ships
+   `launchagents/render.sh` gets a second, cheap gate alongside the dependency
+   rebuild: `render.sh` post-processes the rendered plist (e.g. filling in a
+   dynamic schedule block from user config), and re-runs whenever a hash of
+   `~/.config/<tool>/env` changes -- not only on a dependency bump -- so a
+   user-edited setting (e.g. obsidian-search-tools' reindex cadence) takes
+   effect on the next session (issue #60). `render.sh` failure is non-fatal;
+   the unload/load below already tolerates a plist it can't parse.
 
    Only ship a plist here for an *unattended scheduled job* (obsidian-search-tools
    is the reference example; homeops and lawnops LaunchAgents are maintainer-home-

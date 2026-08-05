@@ -10,6 +10,8 @@ Configuration is via environment variables only. No config file.
 |---------|----------|-------------|
 | `OBSIDIAN_VAULT_PATH` | Yes | Absolute path to the vault root directory |
 | `OBSIDIAN_EXCLUDED_SECTIONS` | No | Comma-separated top-level subdirectory names to skip during indexing |
+| `OBSIDIAN_REINDEX_TIMES` | No | Comma-separated 24-hour `HH:MM` fire times for the scheduled reindex LaunchAgent. Default: `06:00,12:00,18:00` (3x/day). Invalid values fall back to the default. |
+| `OBSIDIAN_REINDEX_STALENESS_HOURS` | No | Hours the index must be younger than for `reindex --skip-if-fresh` to skip a rebuild. Default: `2`. |
 
 Export these before calling any CLI command or MCP tool:
 
@@ -120,6 +122,67 @@ Last reindex   : 2026-06-27T14:32:01
 Model          : BAAI/bge-small-en-v1.5
 Sections       : Finance, House, Personal
 DB path        : /Users/you/.local/share/obsidian-search-tools/vault.db
+```
+
+### schedule
+
+Introspect and (indirectly) drive the reindex LaunchAgent's cadence.
+
+```bash
+obsidian-search-tools schedule show
+```
+
+```
+Reindex times      : 06:00, 12:00, 18:00
+Staleness threshold: 2.0h
+Last reindex       : 2026-08-05T12:00:03+00:00
+Currently stale    : False
+```
+
+`schedule render <plist>` is the installer's plumbing (called by
+`launchagents/render.sh`, not normally run by hand): it fills in the
+`StartCalendarInterval` block of an already-`__HOME__`-rendered plist from the
+configured `OBSIDIAN_REINDEX_TIMES`.
+
+## Scheduling (reindex LaunchAgent)
+
+The plugin install ships `com.obsidian-search-tools.reindex`, a LaunchAgent
+that runs `obsidian-search-tools reindex --skip-if-fresh` on a schedule plus
+at login (`RunAtLoad`), so a Mac that sleeps through a scheduled fire still
+catches up on wake/login instead of silently drifting stale (macOS drops a
+missed plain interval timer; a missed *calendar* fire runs once on next
+wake). `--skip-if-fresh` is the safety valve for the resulting overlap: if
+`RunAtLoad` and a calendar fire land close together, the second call is a
+no-op rather than a second ~130MB-model embedding run.
+
+**Changing the cadence:** set `OBSIDIAN_REINDEX_TIMES` (comma-separated
+24-hour `HH:MM`, default `06:00,12:00,18:00`) in
+`~/.config/obsidian-search-tools/env`:
+
+```bash
+mkdir -p ~/.config/obsidian-search-tools
+echo "OBSIDIAN_REINDEX_TIMES=05:00,11:00,17:00,23:00" >> ~/.config/obsidian-search-tools/env
+echo "OBSIDIAN_REINDEX_STALENESS_HOURS=3" >> ~/.config/obsidian-search-tools/env
+```
+
+The next Claude Code session start re-renders and reloads the LaunchAgent
+automatically -- the SessionStart hook re-renders it whenever a hash of that
+env file changes, not only when the plugin's dependencies change, so no
+manual `launchctl` step is required.
+
+**Upgrade path for installs from before this cadence support (< 0.2.0):**
+those installs have `com.obsidian-search-tools.reindex.plist` on disk with
+the old `StartInterval`/`RunAtLoad=false` shape. Updating the plugin bumps
+the version in `pyproject.toml`, which changes the dependency hash and
+triggers the existing venv-rebuild path -- the LaunchAgent is re-rendered and
+reloaded as part of that rebuild, with no separate action needed. If you want
+to force it sooner (or you're on the dev checkout, not a plugin install), run
+`scripts/install_launchagents.sh` from the repo root, or manually:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.obsidian-search-tools.reindex.plist
+# Restart a Claude Code session, or re-run the dev script above, to
+# re-render and reload with the new StartCalendarInterval + RunAtLoad shape.
 ```
 
 ## License

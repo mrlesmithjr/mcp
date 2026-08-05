@@ -66,7 +66,7 @@
       "description": "Semantic and keyword search over an Obsidian vault via MCP",
       "name": "obsidian-search-tools",
       "source": "./packages/obsidian-search-tools",
-      "version": "0.1.8"
+      "version": "0.2.0"
     },
     {
       "description": "Google Sheets MCP server: read and write spreadsheets via the Sheets API",

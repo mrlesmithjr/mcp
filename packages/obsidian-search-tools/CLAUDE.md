@@ -18,6 +18,8 @@ Semantic and keyword search over an Obsidian vault via MCP.
 |---------|----------|-------------|
 | `OBSIDIAN_VAULT_PATH` | Yes | Absolute path to vault root |
 | `OBSIDIAN_EXCLUDED_SECTIONS` | No | Comma-separated top-level subdirs to skip |
+| `OBSIDIAN_REINDEX_TIMES` | No | Comma-separated 24h `HH:MM` reindex LaunchAgent fire times. Default `06:00,12:00,18:00` |
+| `OBSIDIAN_REINDEX_STALENESS_HOURS` | No | Staleness guard threshold (hours) for `reindex --skip-if-fresh`. Default `2` |
 
 No YAML config. No hardcoded paths or section names.
 
@@ -30,7 +32,8 @@ No YAML config. No hardcoded paths or section names.
 | `obsidian_search_tools/indexer.py` | FastEmbed + sqlite-vec + FTS5 index builder |
 | `obsidian_search_tools/searcher.py` | Hybrid BM25+KNN search with RRF k=60 fusion |
 | `obsidian_search_tools/config.py` | Env var reader |
-| `obsidian_search_tools/cli.py` | CLI: configure, reindex, status, db init |
+| `obsidian_search_tools/scheduler.py` | Reindex LaunchAgent plist rendering + staleness guard (issue #60) |
+| `obsidian_search_tools/cli.py` | CLI: configure, reindex, status, schedule show/render, db init |
 | `obsidian_search_tools/db/schema.py` | Schema: chunks, chunk_tags, index_meta, chunks_fts, chunks_vec |
 | `obsidian_search_tools/db/connection.py` | sqlite-vec extension loading + connection factory |
 
@@ -43,7 +46,7 @@ No YAML config. No hardcoded paths or section names.
 - **Section filter**: `section TEXT PARTITION KEY` in vec0 (NOT `+section TEXT` which is an auxiliary column and doesn't support WHERE filtering in KNN queries)
 - **Search**: FTS5 BM25 top 50 + vec0 KNN top 50, fused via RRF k=60, max 2 chunks per note in results
 - **Indexing**: mtime-based incremental by default (`force=False`); only new/changed files are re-embedded. `force=True` does a full rebuild.
-- **LaunchAgent**: `com.obsidian-search-tools.reindex` fires every 4 hours; sources `~/.config/obsidian-search-tools/env` for `OBSIDIAN_VAULT_PATH`; logs to `~/.local/share/obsidian-search-tools/reindex.log`
+- **LaunchAgent**: `com.obsidian-search-tools.reindex` uses `StartCalendarInterval` (one entry per `OBSIDIAN_REINDEX_TIMES`, default `06:00,12:00,18:00`) plus `RunAtLoad=true` -- a missed calendar fire runs once on wake (unlike the `StartInterval` this replaced, issue #60), and `RunAtLoad` catches up on login. `reindex --skip-if-fresh` (see `scheduler.py`) guards against the two firing close together and double-embedding. Sources `~/.config/obsidian-search-tools/env` for `OBSIDIAN_VAULT_PATH` and the schedule vars; logs to `~/.local/share/obsidian-search-tools/reindex.log`. `launchagents/render.sh` fills in `StartCalendarInterval` at install time (called from the generated `hooks/install_deps.sh`, itself driven by `scripts/gen_marketplace.py` at the workspace root -- see that file's `_INSTALL_DEPS_TEMPLATE` for the `render.sh` hook point and the schedule-hash re-render gate).
 
 ## Common Commands
 
