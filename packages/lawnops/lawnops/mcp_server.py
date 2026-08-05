@@ -93,16 +93,6 @@ def _pollen():
     return data
 
 
-def _row_to_dict(row):
-    """Convert a sqlite3.Row to a plain dict."""
-    return dict(row)
-
-
-def _rows_to_list(rows):
-    """Convert a list of sqlite3.Row objects to a list of dicts."""
-    return [dict(r) for r in rows]
-
-
 # ── Weather ──
 
 
@@ -329,10 +319,11 @@ def product_list() -> str:
     last_ordered, cost_each, source}]}
     """
     try:
-        from lawnops.db import list_products
+        from lawnops import log_compute, log_store
 
-        rows = list_products(_config())
-        return json.dumps({"products": _rows_to_list(rows)})
+        config = _config()
+        rows = log_store.read_table(config, "products")
+        return json.dumps({"products": log_compute.list_products(rows)})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -349,9 +340,24 @@ def product_add(
 ) -> str:
     """Add a new product to inventory."""
     try:
-        from lawnops.db import add_product
+        from datetime import datetime
 
-        add_product(_config(), name, category, qty, unit, cost, source, notes)
+        from lawnops import log_store
+
+        log_store.append_row(
+            _config(),
+            "products",
+            {
+                "name": name,
+                "category": category,
+                "qty_on_hand": qty,
+                "unit": unit,
+                "last_ordered": datetime.now().strftime("%Y-%m-%d"),
+                "cost_each": cost,
+                "source": source,
+                "notes": notes,
+            },
+        )
         return json.dumps(
             {
                 "added": True,
@@ -372,12 +378,17 @@ def product_add(
 def product_update(name: str, qty: float | None = None, cost: float | None = None) -> str:
     """Update an existing product's stock quantity and/or cost by partial name match."""
     try:
-        from lawnops.db import update_product
+        from lawnops import log_store
 
         if qty is None and cost is None:
             return json.dumps({"error": "Must provide at least one of qty or cost"})
 
-        rowcount = update_product(_config(), name, qty, cost)
+        changes = {}
+        if qty is not None:
+            changes["qty_on_hand"] = qty
+        if cost is not None:
+            changes["cost_each"] = cost
+        rowcount = log_store.update_row(_config(), "products", {"name_contains": name}, changes)
         result = {"name": name, "matched": rowcount}
         if qty is not None:
             result["qty"] = qty
@@ -394,9 +405,9 @@ def product_update(name: str, qty: float | None = None, cost: float | None = Non
 def product_delete(name: str) -> str:
     """Delete a product from inventory by partial name match."""
     try:
-        from lawnops.db import delete_product
+        from lawnops import log_store
 
-        rowcount = delete_product(_config(), name)
+        rowcount = log_store.delete_row(_config(), "products", {"name_contains": name})
         result = {"name": name, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No product found matching '{name}'"
@@ -413,9 +424,12 @@ def product_alerts() -> str:
     source, treatment_count, last_used}], count}
     """
     try:
-        from lawnops.db import get_reorder_alerts
+        from lawnops import log_compute, log_store
 
-        alerts = get_reorder_alerts(_config())
+        config = _config()
+        products = log_store.read_table(config, "products")
+        treatments = log_store.read_table(config, "treatments")
+        alerts = log_compute.reorder_alerts(products, treatments)
         return json.dumps({"alerts": alerts, "count": len(alerts)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -430,13 +444,15 @@ def mowing_add(
 ) -> str:
     """Log a mowing visit."""
     try:
-        from lawnops.db import add_mowing
+        from lawnops import log_store
 
         config = _config()
         resolved_provider = (
             provider if provider is not None else config.get("mowing", {}).get("default_provider", "Mowing Service")
         )
-        add_mowing(config, date, provider, cost, notes)
+        log_store.append_row(
+            config, "mowing_visits", {"date": date, "provider": resolved_provider, "cost": cost, "notes": notes}
+        )
         return json.dumps(
             {
                 "added": True,
@@ -454,9 +470,9 @@ def mowing_add(
 def mowing_delete(row_id: int) -> str:
     """Delete a mowing visit by ID."""
     try:
-        from lawnops.db import delete_mowing
+        from lawnops import log_store
 
-        rowcount = delete_mowing(_config(), row_id)
+        rowcount = log_store.delete_row(_config(), "mowing_visits", {"id": row_id})
         result = {"id": row_id, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No mowing visit found with id {row_id}"
@@ -476,9 +492,13 @@ def treatment_add(
 ) -> str:
     """Log a lawn treatment application."""
     try:
-        from lawnops.db import add_treatment
+        from lawnops import log_store
 
-        add_treatment(_config(), date, area, product, method, cost=cost, notes=notes)
+        log_store.append_row(
+            _config(),
+            "treatments",
+            {"date": date, "area": area, "product": product, "method": method, "cost": cost, "notes": notes},
+        )
         return json.dumps(
             {
                 "added": True,
@@ -498,9 +518,9 @@ def treatment_add(
 def treatment_delete(row_id: int) -> str:
     """Delete a treatment by ID."""
     try:
-        from lawnops.db import delete_treatment
+        from lawnops import log_store
 
-        rowcount = delete_treatment(_config(), row_id)
+        rowcount = log_store.delete_row(_config(), "treatments", {"id": row_id})
         result = {"id": row_id, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No treatment found with id {row_id}"
@@ -513,10 +533,11 @@ def treatment_delete(row_id: int) -> str:
 def treatment_list(year: int | None = None) -> str:
     """Treatment history - products applied, areas, methods, and costs."""
     try:
-        from lawnops.db import list_treatments
+        from lawnops import log_compute, log_store
 
-        rows, yr = list_treatments(_config(), year)
-        treatments = _rows_to_list(rows)
+        config = _config()
+        rows = log_store.read_table(config, "treatments")
+        treatments, yr = log_compute.list_treatments(rows, year)
         return json.dumps({"year": yr, "treatments": treatments, "count": len(treatments)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -533,17 +554,18 @@ def mowing_summary(year: int | None = None) -> str:
     costs below it are then understated.
     """
     try:
-        from lawnops.db import get_mowing_gap, get_mowing_summary
+        from lawnops import log_compute, log_store
 
         config = _config()
-        rows, total_visits, total_cost, yr = get_mowing_summary(config, year)
+        rows = log_store.read_table(config, "mowing_visits")
+        visits, total_visits, total_cost, yr = log_compute.mowing_summary(rows, year)
         return json.dumps(
             {
                 "year": yr,
-                "visits": _rows_to_list(rows),
+                "visits": visits,
                 "total_visits": total_visits,
                 "total_cost": total_cost,
-                "gap": get_mowing_gap(config, year),
+                "gap": log_compute.mowing_gap(rows, config, year),
             }
         )
     except Exception as e:
@@ -558,10 +580,11 @@ def equipment_list() -> str:
     status, notes}]}
     """
     try:
-        from lawnops.db import list_equipment
+        from lawnops import log_compute, log_store
 
-        rows = list_equipment(_config())
-        return json.dumps({"equipment": _rows_to_list(rows)})
+        config = _config()
+        rows = log_store.read_table(config, "equipment")
+        return json.dumps({"equipment": log_compute.list_equipment(rows)})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -577,9 +600,20 @@ def purchase_add(
 ) -> str:
     """Log a product/equipment purchase."""
     try:
-        from lawnops.db import add_purchase
+        from lawnops import log_store
 
-        add_purchase(_config(), date, item, category, cost=cost, source=source, notes=notes)
+        log_store.append_row(
+            _config(),
+            "purchases",
+            {
+                "date": date,
+                "item": item,
+                "category": category,
+                "cost": cost,
+                "source": source,
+                "notes": notes,
+            },
+        )
         return json.dumps(
             {
                 "added": True,
@@ -599,9 +633,9 @@ def purchase_add(
 def purchase_delete(row_id: int) -> str:
     """Delete a purchase by ID."""
     try:
-        from lawnops.db import delete_purchase
+        from lawnops import log_store
 
-        rowcount = delete_purchase(_config(), row_id)
+        rowcount = log_store.delete_row(_config(), "purchases", {"id": row_id})
         result = {"id": row_id, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No purchase found with id {row_id}"
@@ -620,9 +654,13 @@ def equipment_add(
 ) -> str:
     """Add equipment to inventory."""
     try:
-        from lawnops.db import add_equipment
+        from lawnops import log_store
 
-        add_equipment(_config(), name, cost, purchase_date, source, notes)
+        log_store.append_row(
+            _config(),
+            "equipment",
+            {"name": name, "cost": cost, "purchase_date": purchase_date, "source": source, "notes": notes},
+        )
         return json.dumps(
             {
                 "added": True,
@@ -641,9 +679,9 @@ def equipment_add(
 def equipment_delete(row_id: int) -> str:
     """Delete equipment by ID."""
     try:
-        from lawnops.db import delete_equipment
+        from lawnops import log_store
 
-        rowcount = delete_equipment(_config(), row_id)
+        rowcount = log_store.delete_row(_config(), "equipment", {"id": row_id})
         result = {"id": row_id, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No equipment found with id {row_id}"
@@ -659,16 +697,18 @@ def equipment_delete(row_id: int) -> str:
 def spend_report(year: int | None = None, category: str | None = None) -> str:
     """Spending report - by-category totals and itemized purchases."""
     try:
-        from lawnops.db import get_spend_report
+        from lawnops import log_compute, log_store
 
-        cat_rows, grand_total, item_rows, yr = get_spend_report(_config(), year, category)
+        config = _config()
+        rows = log_store.read_table(config, "purchases")
+        cat_rows, grand_total, item_rows, yr = log_compute.spend_report(rows, year, category)
         return json.dumps(
             {
                 "year": yr,
                 "category_filter": category,
-                "categories": _rows_to_list(cat_rows),
+                "categories": cat_rows,
                 "grand_total": grand_total,
-                "items": _rows_to_list(item_rows),
+                "items": item_rows,
             }
         )
     except Exception as e:
