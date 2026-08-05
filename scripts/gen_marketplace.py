@@ -590,12 +590,6 @@ _CODEX_INTERFACE: dict[str, dict] = {
         "capabilities": ["Interactive", "Read", "Write"],
         "default_prompt": ["Find duplicate contacts and merge them."],
     },
-    "flightops": {
-        "display_name": "FlightOps",
-        "category": "Travel",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Search one-way flights from ATL to DEN next month."],
-    },
     "homeops": {
         "display_name": "HomeOps",
         "category": "Business & Operations",

@@ -21,12 +21,6 @@
       "version": "0.2.3"
     },
     {
-      "description": "Flight price tracker CLI: monitor fares over time, spot patterns, and find the best time to buy",
-      "name": "flightops",
-      "source": "./packages/flightops",
-      "version": "0.1.7"
-    },
-    {
       "description": "Home maintenance operations CLI: recurring tasks, pest control, service providers, and cost tracking",
       "name": "homeops",
       "source": "./packages/homeops",

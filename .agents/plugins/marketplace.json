@@ -29,18 +29,6 @@
       }
     },
     {
-      "category": "Travel",
-      "name": "flightops",
-      "policy": {
-        "authentication": "ON_INSTALL",
-        "installation": "AVAILABLE"
-      },
-      "source": {
-        "path": "./packages/flightops",
-        "source": "local"
-      }
-    },
-    {
       "category": "Business & Operations",
       "name": "homeops",
       "policy": {
