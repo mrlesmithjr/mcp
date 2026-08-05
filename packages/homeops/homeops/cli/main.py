@@ -201,6 +201,13 @@ def main():
     db_sub = db_parser.add_subparsers(dest="db_command")
     db_sub.add_parser("init", help="Initialize the database")
 
+    log_export_parser = db_sub.add_parser(
+        "log-export", help="Seed the home_log markdown backend from existing SQLite rows"
+    )
+    log_export_parser.add_argument(
+        "--preview", action="store_true", help="Print row counts without writing the markdown file(s)"
+    )
+
     # Parse and route
     args = parser.parse_args()
 
@@ -271,8 +278,14 @@ def _handle_db(args, config):
     if args.db_command == "init":
         db_path = db.init_db(config)
         display.print_db_init(db_path)
+    elif args.db_command == "log-export":
+        from homeops.log_migrate import export_log
+
+        preview = getattr(args, "preview", False)
+        counts = export_log(config, preview=preview)
+        display.print_log_export(counts, preview)
     else:
-        print("Usage: homeops db init")
+        print("Usage: homeops db {init|log-export}")
 
 
 def _handle_task(args, config):

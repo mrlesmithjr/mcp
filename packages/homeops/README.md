@@ -1,6 +1,6 @@
 # HomeOps
 
-Home maintenance operations CLI and MCP server. Tracks recurring maintenance tasks, pest control treatments, service providers, appliance lifecycles, utility bills, and home costs - all backed by SQLite. Includes HVAC monitoring via Prometheus (sourced from Home Assistant's own climate metrics exporter, not a direct Home Assistant dependency) and budget planning with YNAB integration.
+Home maintenance operations CLI and MCP server. Tracks recurring maintenance tasks, pest control treatments, service providers, appliance lifecycles, utility bills, and home costs, storage backend selectable between SQLite (default) and an external markdown file. Includes HVAC monitoring via Prometheus (sourced from Home Assistant's own climate metrics exporter, not a direct Home Assistant dependency) and budget planning with YNAB integration.
 
 ## Setup
 
@@ -45,6 +45,7 @@ Create `~/.config/homeops/config.json` directly:
 |-----------|----------|---------|-------------|
 | `prometheus_url` | No | `http://localhost:9091` | Prometheus base URL for HVAC tools (no auth) |
 | `database.path` | No | `~/.local/share/homeops/homeops.db` | SQLite database location |
+| `home_log` | No | (omit = sqlite) | Selects storage backend for tasks/task_log/pest_treatments/costs/utility_bills/providers/appliances (`sqlite` default, or `markdown` with file routing, section headings, date format) |
 | `reminders.list` | No | `Personal` | Unused (issue #39 - Apple Reminders creation removed); harmless to leave in config |
 | `reminders.default_time` | No | `10:00` | Unused (issue #39 - Apple Reminders creation removed); harmless to leave in config |
 | `categories.tasks` | No | hvac, plumbing, gutters, pest, electrical, exterior, interior, safety, appliance | Valid task categories |
@@ -107,6 +108,11 @@ homeops hvac history --hours 48      # Mode changes and overrides
 
 # Budget
 homeops budget overview              # Sinking funds + upcoming maintenance
+
+# Database
+homeops db init                      # Explicit initialization (optional)
+homeops db log-export --preview      # Preview seeding the home_log markdown backend from SQLite
+homeops db log-export                # Seed home_log markdown backend from existing SQLite rows
 ```
 
 ## MCP Server
@@ -193,6 +199,14 @@ homeops/
 ├── ha.py                # HVAC integration - queries Prometheus, not Home Assistant directly
 ├── ynab_bridge.py       # YNAB budget integration
 ├── checklists.py        # Seasonal maintenance checklists
+├── log_store.py         # Backend-neutral read_table/append_row/update_row/delete_row dispatch
+├── log_schema.py        # Canonical per-entity columns + defaults, shared by both backends
+├── log_compute.py       # Backend-neutral list/report logic (year filter, sort, aggregation)
+├── log_migrate.py       # export_log(): seeds the markdown backend from SQLite (`db log-export`)
+├── log_backends/
+│   ├── sqlite_backend.py    # Default backend; delegates to db/ CRUD functions
+│   └── markdown_backend.py  # External markdown file backend (source of truth when configured)
+├── atomic_io.py         # Atomic file writes for the markdown backend
 ├── db/
 │   ├── __init__.py      # Re-export all CRUD
 │   ├── connection.py    # SQLite connection helpers

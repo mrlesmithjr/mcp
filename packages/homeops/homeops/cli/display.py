@@ -561,7 +561,17 @@ def print_reminder_list(data):
 
 def print_db_init(db_path):
     """Print database initialization confirmation."""
-    print(f"\n✅ Database initialized: {db_path}\n")
+    print(f"\nDatabase initialized: {db_path}\n")
+
+
+def print_log_export(counts, preview):
+    """Print home_log markdown export row counts (issue #58)."""
+    label = "Home Log Export Preview (no files written)" if preview else "Home Log Export Complete"
+    print(f"\n{label}")
+    print("-" * 40)
+    for entity, count in counts.items():
+        print(f"  {entity:<20} {count:>3} rows")
+    print()
 
 
 def print_hvac_snapshot_dry_run(data):

@@ -1291,7 +1291,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "mrlesmithjr-mcp-homeops"
-version = "0.1.26"
+version = "0.1.27"
 source = { editable = "packages/homeops" }
 dependencies = [
     { name = "mcp" },
