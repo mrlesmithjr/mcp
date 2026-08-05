@@ -7,7 +7,153 @@ correctly classified by read-only / destructive / open-world hints.
 
 from __future__ import annotations
 
+import json
+from types import SimpleNamespace
+from unittest.mock import patch
+
 import pytest
+
+
+def _fake_zone(number, name="Zone", suspended=False, watering_adjustment=100):
+    """Minimal fake pydrawise Zone covering every attribute _serialize_irrigation_status reads."""
+    from datetime import datetime
+
+    sched = SimpleNamespace(current_run=None, next_run=None, summary=None)
+    suspensions = [SimpleNamespace(end_time=datetime(2026, 1, 1, 6, 0))] if suspended else []
+    return SimpleNamespace(
+        number=SimpleNamespace(value=number),
+        name=name,
+        scheduled_runs=sched,
+        suspensions=suspensions,
+        watering_settings=SimpleNamespace(fixed_watering_adjustment=watering_adjustment),
+    )
+
+
+def _fake_ctrl(zones, name="Controller", online=True):
+    return SimpleNamespace(
+        zones=zones,
+        name=name,
+        online=online,
+        software_version="1.0",
+        status=None,
+        last_contact_time=None,
+    )
+
+
+def _fake_program(zones, name="Main Lawn"):
+    return {"name": name, "start": "06:00", "period": 2, "monthly": [100] * 12, "zones": zones}
+
+
+class TestSerializeIrrigationStatusSchedulingNote:
+    """Unit #53: scheduling_note is live-state-derived and additive-only."""
+
+    def test_active_program_gets_no_scheduling_note(self):
+        from lawnops.mcp_server import _serialize_irrigation_status
+
+        ctrl = _fake_ctrl([_fake_zone(1, suspended=False)])
+        programs = {1: _fake_program([1])}
+
+        result = _serialize_irrigation_status(ctrl, [], programs)
+
+        assert "scheduling_note" not in result
+
+    def test_all_zones_suspended_gets_scheduling_note(self):
+        from lawnops.mcp_server import _serialize_irrigation_status
+
+        ctrl = _fake_ctrl([_fake_zone(1, suspended=True)])
+        programs = {1: _fake_program([1])}
+
+        result = _serialize_irrigation_status(ctrl, [], programs)
+
+        assert "scheduling_note" in result
+        assert "suspended" in result["scheduling_note"]
+
+    def test_no_programs_configured_gets_scheduling_note(self):
+        from lawnops.mcp_server import _serialize_irrigation_status
+
+        ctrl = _fake_ctrl([_fake_zone(1, suspended=False)])
+
+        result = _serialize_irrigation_status(ctrl, [], {})
+
+        assert "scheduling_note" in result
+        assert "No Hydrawise program" in result["scheduling_note"]
+
+    def test_partial_suspension_within_program_gets_no_scheduling_note(self):
+        """One unsuspended program zone is enough to count as active."""
+        from lawnops.mcp_server import _serialize_irrigation_status
+
+        ctrl = _fake_ctrl([_fake_zone(1, suspended=True), _fake_zone(2, suspended=False)])
+        programs = {1: _fake_program([1, 2])}
+
+        result = _serialize_irrigation_status(ctrl, [], programs)
+
+        assert "scheduling_note" not in result
+
+
+class TestIrrigationHistorySkipGating:
+    """Unit #53: irrigation_history's skip entries are gated on active_program."""
+
+    @patch("lawnops.db.irrigation_log.sync_skipped_runs")
+    @patch("lawnops.db.irrigation_log.get_skip_history_from_db")
+    @patch("lawnops.db.irrigation_log.get_history_from_db")
+    @patch("lawnops.db.irrigation_log.sync_irrigation")
+    def test_no_skip_entries_when_inactive(
+        self, mock_sync_irrigation, mock_get_history, mock_get_skip_history, mock_sync_skipped
+    ):
+        from lawnops.mcp_server import irrigation_history
+
+        mock_sync_irrigation.return_value = (0, 2)
+        mock_get_history.return_value = []
+        mock_sync_skipped.return_value = (0, False)
+        mock_get_skip_history.return_value = [{"type": "skip", "expected_date": "2026-07-01"}]
+
+        result = json.loads(irrigation_history(days=7))
+
+        assert result["active_program"] is False
+        assert result["skips"] == 0
+        assert all(e.get("type") != "skip" for e in result["entries"])
+        mock_get_skip_history.assert_not_called()
+
+    @patch("lawnops.db.irrigation_log.sync_skipped_runs")
+    @patch("lawnops.db.irrigation_log.get_skip_history_from_db")
+    @patch("lawnops.db.irrigation_log.get_history_from_db")
+    @patch("lawnops.db.irrigation_log.sync_irrigation")
+    def test_skip_entries_present_when_active(
+        self, mock_sync_irrigation, mock_get_history, mock_get_skip_history, mock_sync_skipped
+    ):
+        from lawnops.mcp_server import irrigation_history
+
+        mock_sync_irrigation.return_value = (0, 2)
+        mock_get_history.return_value = []
+        mock_sync_skipped.return_value = (1, True)
+        mock_get_skip_history.return_value = [{"type": "skip", "expected_date": "2026-07-01"}]
+
+        result = json.loads(irrigation_history(days=7))
+
+        assert result["active_program"] is True
+        assert result["skips"] == 1
+        assert any(e.get("type") == "skip" for e in result["entries"])
+        mock_get_skip_history.assert_called_once()
+
+    @patch("lawnops.db.irrigation_log.sync_skipped_runs")
+    @patch("lawnops.db.irrigation_log.get_skip_history_from_db")
+    @patch("lawnops.db.irrigation_log.get_history_from_db")
+    @patch("lawnops.db.irrigation_log.sync_irrigation")
+    def test_fails_closed_when_active_state_cannot_be_determined(
+        self, mock_sync_irrigation, mock_get_history, mock_get_skip_history, mock_sync_skipped
+    ):
+        """Controller unreachable during sync_skipped_runs -> no skips asserted."""
+        from lawnops.mcp_server import irrigation_history
+
+        mock_sync_irrigation.side_effect = Exception("controller unreachable")
+        mock_get_history.return_value = []
+        mock_sync_skipped.side_effect = RuntimeError("controller unreachable")
+
+        result = json.loads(irrigation_history(days=7))
+
+        assert result["active_program"] is False
+        assert result["skips"] == 0
+        mock_get_skip_history.assert_not_called()
 
 
 class TestToolAnnotations:
