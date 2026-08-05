@@ -61,6 +61,46 @@ database:
   path: "~/.local/share/lawnops/lawnops.db"
   auto_log: true
 
+# Agronomic log backend (issue #57): where treatments, products, equipment,
+# purchases, and mowing visits are stored. Read/write MCP tools (treatment_add,
+# product_add/update/delete, purchase_add/delete, mowing_add/delete,
+# equipment_add/delete, treatment_list, product_list, product_alerts,
+# mowing_summary, equipment_list, spend_report) all go through this backend.
+# Omit this whole block to keep the zero-config default (sqlite).
+lawn_log:
+  backend: sqlite          # "sqlite" (default, self-contained) | "markdown" (external file)
+  markdown:                # consulted only when backend: markdown
+    # Default file for every entity not overridden in `entities` below.
+    # Obsidian-vault-relative or an absolute path; ~ is expanded.
+    note: "~/Obsidian/Personal/Lawn/Lawn Log.md"
+    # Optional: route an entity to its own file instead of `note`.
+    # entities:
+    #   equipment: "~/Obsidian/Personal/Lawn/Equipment.md"
+    #   products: "~/Obsidian/Personal/Lawn/Inventory.md"
+    # Optional: override the "## Heading" used per entity (default shown).
+    # section_headings:
+    #   treatments: "Treatments"
+    #   products: "Products"
+    #   equipment: "Equipment"
+    #   purchases: "Purchases"
+    #   mowing_visits: "Mowing"
+    #   seasonal_tasks: "Seasonal Tasks"
+    # Display format for date-typed columns in the markdown table. Rows are
+    # always stored/filtered internally as YYYY-MM-DD regardless of this
+    # setting -- it only controls how dates are rendered in the file.
+    date_format: "%Y-%m-%d"
+  # Note schema (fixed column set/order per entity -- lawnops owns the table
+  # contract so parsing stays deterministic; only backend/file/heading/date
+  # format above are configurable):
+  #   ## Treatments:      | date | area | product | method | amount | soil_temp_f | cost | notes |
+  #   ## Products:        | name | category | qty_on_hand | unit | last_ordered | cost_each | source | notes |
+  #   ## Equipment:       | name | purchase_date | cost | source | status | notes |
+  #   ## Purchases:       | date | item | category | qty | cost | source | notes |
+  #   ## Mowing:          | date | provider | cost | notes |
+  #   ## Seasonal Tasks:  | season | task | timing | product | notes |
+  # After switching backend to markdown, seed the file once from existing
+  # SQLite rows with: lawnops db log-export [--preview]
+
 # Obsidian vault integration (optional)
 # obsidian:
 #   task_list: "/path/to/your/vault/Task List.md"

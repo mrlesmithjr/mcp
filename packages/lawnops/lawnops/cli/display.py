@@ -523,6 +523,15 @@ def display_obsidian_import(counts):
     print()
 
 
+def display_log_export(counts, preview):
+    label = "Lawn Log Export Preview (no files written)" if preview else "Lawn Log Export Complete"
+    print(f"\n{label}")
+    print("\u2500" * 40)
+    for entity, count in counts.items():
+        print(f"  {entity:<20} {count:>3} rows")
+    print()
+
+
 def display_ynab_preview(mowing_visits, purchases, skipped):
     print("\n\U0001f4b3 YNAB Import Preview")
     print("\u2500" * 70)

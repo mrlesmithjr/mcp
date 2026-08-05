@@ -1,6 +1,6 @@
 # LawnOps
 
-Personal lawn care operations CLI built for my property in North Georgia (Zone 7b/8a). Handles soil temperature monitoring, pre-emergent timing advisories, application window planning, Hunter Hydrawise irrigation control, and SQLite-backed tracking for treatments, products, equipment, mowing, and spending.
+Personal lawn care operations CLI built for my property in North Georgia (Zone 7b/8a). Handles soil temperature monitoring, pre-emergent timing advisories, application window planning, Hunter Hydrawise irrigation control, and tracking for treatments, products, equipment, mowing, and spending, storage backend selectable between SQLite (default) and an external markdown file.
 
 This is a personal tool that I'm sharing publicly. It's tailored to my setup but the architecture is modular enough to adapt if you find it useful.
 
@@ -12,7 +12,7 @@ This is a personal tool that I'm sharing publicly. It's tailored to my setup but
 - **Application Window Finder** - Scores next 7 days for spray, granular, or pre-emergent application with weather and mow-buffer analysis
 - **Coverage & Mix Calculators** - How many bags for your yard, concentrate per tank load
 - **Irrigation Control** - Full Hydrawise management via [pydrawise](https://github.com/dknowles2/pydrawise): status, run/stop zones, suspend/resume, watering history
-- **Database Tracking** - SQLite for treatments, products, equipment, mowing visits, purchases, spending reports
+- **Database Tracking** - Treatments, products, equipment, mowing visits, purchases, spending reports; storage backend is SQLite by default, or an external markdown file via the `lawn_log` config block
 - **Reorder Alerts** - Flags zero-stock products that have been used in past treatments
 - **YNAB Import** - Pulls historical lawn spending from [ynab-tools](https://github.com/mrlesmithjr/mcp/tree/main/packages/ynab-tools) database with configurable payee mapping
 - **Obsidian Import** - One-time import from an Obsidian vault Task List
@@ -169,6 +169,8 @@ lawnops db equipment list
 lawnops db report spend --year 2025
 lawnops db report spend --year 2025 --category equipment
 lawnops db sync-irrigation --days 30
+lawnops db log-export --preview      # Preview seeding the lawn_log markdown backend from SQLite
+lawnops db log-export                # Seed lawn_log markdown backend from existing SQLite rows
 
 # Deterministic checks (read-only reports; issue #146, Reminders creation removed in #39)
 lawnops bermuda-check                # Soil temp vs Bermuda green-up threshold
@@ -199,6 +201,7 @@ All settings live in `~/.config/lawnops/config.json`. A legacy `config.yaml` in 
 | `hydrawise` | API credentials, zone notes, post-treatment hold hours |
 | `mowing` | Default provider, schedule day, no-mow buffer |
 | `database` | DB path, auto-log toggle |
+| `lawn_log` | Optional; selects treatment/product/equipment/purchase/mowing/seasonal-task storage backend (`sqlite` default, or `markdown` with file routing, section headings, date format) |
 | `pollen` | Pollen source URL and spray impact thresholds |
 | `ynab` | ynab-tools DB path, category, payee→provider mapping |
 | `obsidian` | Path to Task List.md for import |
@@ -368,6 +371,13 @@ lawnops/
 ├── mixrate.py             # Spray concentrate mix rate calculator
 ├── irrigation.py          # Hydrawise (async internals, sync API)
 ├── irrigation_config.py   # Declarative config export: serialize live controller state to YAML
+├── log_store.py           # Backend-neutral read_table/append_row/update_row/delete_row dispatch
+├── log_schema.py          # Canonical per-entity columns + defaults, shared by both backends
+├── log_compute.py         # Backend-neutral list/report logic (year filter, sort, aggregation)
+├── log_migrate.py         # export_log(): seeds the markdown backend from SQLite (`db log-export`)
+├── log_backends/
+│   ├── sqlite_backend.py  # Default backend; delegates to db/ CRUD functions
+│   └── markdown_backend.py # External markdown file backend (source of truth when configured)
 ├── db/
 │   ├── connection.py      # SQLite connection helpers
 │   ├── schema.py          # Schema + init

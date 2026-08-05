@@ -48,7 +48,7 @@
       "description": "Lawn care operations CLI: weather monitoring, irrigation control, treatment tracking, and cost management",
       "name": "lawnops",
       "source": "./packages/lawnops",
-      "version": "1.0.50"
+      "version": "1.0.51"
     },
     {
       "description": "Apple Mail MCP server: read, search, and compose email across all accounts via ScriptingBridge",
