@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mrlesmithjr-mcp-obsidian-search-tools"
-version = "0.1.8"
+version = "0.2.0"
 description = "Semantic and keyword search over an Obsidian vault via MCP"
 readme = "README.md"
 license = "MIT"

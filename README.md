@@ -19,7 +19,7 @@ Fourteen tools ship as marketplace plugins. One package supports them and is not
 | `lawnops` | 1.0.50 | Lawn care: weather, irrigation, treatments, products |
 | `mail-tools` | 0.1.35 | Apple Mail read, search, compose across accounts |
 | `nextdns-tools` | 0.1.13 | NextDNS analytics, blocking stats, device activity |
-| `obsidian-search-tools` | 0.1.8 | Hybrid semantic and keyword search over an Obsidian vault |
+| `obsidian-search-tools` | 0.2.0 | Hybrid semantic and keyword search over an Obsidian vault |
 | `sheets-tools` | 0.2.3 | Google Sheets read/write via the Sheets API v4, plus spreadsheet discovery and sharing via Drive |
 | `unifi-tools` | 0.1.27 | UniFi network: devices, clients, VLANs, firewall |
 | `weather-tools` | 0.1.6 | Historical weather data via Open-Meteo |

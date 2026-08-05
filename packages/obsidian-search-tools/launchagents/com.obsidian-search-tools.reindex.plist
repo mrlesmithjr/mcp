@@ -9,8 +9,7 @@
 		<string>/bin/bash</string>
 		<string>__HOME__/.local/share/obsidian-search-tools/reindex.sh</string>
 	</array>
-	<key>StartInterval</key>
-	<integer>14400</integer>
+	__START_CALENDAR_INTERVAL__
 	<key>EnvironmentVariables</key>
 	<dict>
 		<key>HOME</key>
@@ -23,6 +22,6 @@
 	<key>StandardErrorPath</key>
 	<string>__HOME__/.local/share/obsidian-search-tools/reindex.log</string>
 	<key>RunAtLoad</key>
-	<false/>
+	<true/>
 </dict>
 </plist>

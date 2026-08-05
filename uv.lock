@@ -1446,7 +1446,7 @@ requires-dist = [
 
 [[package]]
 name = "mrlesmithjr-mcp-obsidian-search-tools"
-version = "0.1.8"
+version = "0.2.0"
 source = { editable = "packages/obsidian-search-tools" }
 dependencies = [
     { name = "fastembed" },

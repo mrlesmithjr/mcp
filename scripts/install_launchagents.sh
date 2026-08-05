@@ -44,10 +44,18 @@ install_scripts() {
 
 render_and_load() {
   local plist="$1"
+  local pkg_launchagents_dir="$2"
   local label target
   label="$(basename "$plist" .plist)"
   target="$LA_DIR/$label.plist"
   sed "s#__HOME__#$HOME#g" "$plist" > "$target"
+  # Optional per-plist post-processing (e.g. rendering a dynamic schedule
+  # block from user config); a package opts in by shipping
+  # launchagents/render.sh (see scripts/gen_marketplace.py's install_deps.sh
+  # template, which does the same for the plugin-install path).
+  if [[ -f "$pkg_launchagents_dir/render.sh" ]]; then
+    bash "$pkg_launchagents_dir/render.sh" "$target"
+  fi
   plutil -lint "$target" >/dev/null
   launchctl unload -w "$target" 2>/dev/null || true
   launchctl load -w "$target"
@@ -61,7 +69,7 @@ for pkg_dir in "$REPO_ROOT"/packages/*/launchagents; do
   install_scripts "$pkg"
   for plist in "$pkg_dir"/*.plist; do
     [[ -e "$plist" ]] || continue
-    render_and_load "$plist"
+    render_and_load "$plist" "$pkg_dir"
   done
 done
 
