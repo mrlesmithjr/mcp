@@ -138,7 +138,19 @@
         if [ -f "${_la_src}/render.sh" ]; then
             _LA_ENV_FILE="${HOME}/.config/contacts-tools/env"
             _LA_SCHED_GUARD="${PLUGIN_DATA}/schedule.hash"
-            _LA_SCHED_HASH=$(cat "${_LA_ENV_FILE}" 2>/dev/null | shasum -a 256 | awk '{print $1}')
+            # Guard on the env file existing before hashing it: on a fresh
+            # install (no ~/.config/contacts-tools/env yet, before `configure
+            # --write`), `cat` on a missing file exits 1, and under
+            # `set -o pipefail` that nonzero status propagates through the
+            # pipe to `shasum`/`awk` and trips `set -e` on this bare
+            # assignment -- aborting the whole script before env.example is
+            # written or the plist is rendered/loaded. A fixed sentinel
+            # for "no env file yet" avoids the pipeline entirely.
+            if [ -f "${_LA_ENV_FILE}" ]; then
+                _LA_SCHED_HASH=$(shasum -a 256 "${_LA_ENV_FILE}" | awk '{print $1}')
+            else
+                _LA_SCHED_HASH="no-env-file"
+            fi
             if [ ! -f "${_LA_SCHED_GUARD}" ] || [ "$(cat "${_LA_SCHED_GUARD}")" != "${_LA_SCHED_HASH}" ]; then
                 _LA_NEEDS_BUILD=1
             fi

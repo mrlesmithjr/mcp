@@ -144,6 +144,28 @@ def test_is_stale_naive_timestamp_does_not_crash():
     assert isinstance(is_stale(naive_recent, 2.0), bool)
 
 
+def test_is_stale_boundary_uses_greater_or_equal(monkeypatch):
+    """is_stale is documented as `>=`: a timestamp exactly staleness_hours old
+    must count as stale, and one second younger must not. `datetime.now()` is
+    frozen (via a scheduler-local subclass) so the two branches are compared
+    against the same fixed instant instead of real elapsed wall-clock time,
+    which would otherwise always tip slightly past the threshold."""
+    fixed_now = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+
+    class _FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return fixed_now if tz is not None else fixed_now.replace(tzinfo=None)
+
+    monkeypatch.setattr("obsidian_search_tools.scheduler.datetime", _FrozenDatetime)
+
+    exactly_at_threshold = (fixed_now - timedelta(hours=2)).isoformat()
+    assert is_stale(exactly_at_threshold, 2.0) is True
+
+    one_second_under_threshold = (fixed_now - timedelta(hours=2) + timedelta(seconds=1)).isoformat()
+    assert is_stale(one_second_under_threshold, 2.0) is False
+
+
 def test_get_last_reindex_missing_db(tmp_path):
     assert get_last_reindex(tmp_path / "does-not-exist.db") is None
 
