@@ -123,31 +123,71 @@
         fi
     done
 
-    # Install any LaunchAgents shipped with this plugin, only when the venv was
-    # just (re)built, to avoid per-session launchctl churn. Plists are templates
+    # Install any LaunchAgents shipped with this plugin. Plists are templates
     # using __HOME__; runtime scripts land in ~/.local/share/nextdns-tools/.
+    #
+    # Re-render + reload is normally gated on NEEDS_BUILD (a dependency
+    # rebuild), to avoid per-session launchctl churn. A plugin that ships
+    # launchagents/render.sh opts into a second, cheap gate: a hash of its
+    # persisted env file (~/.config/nextdns-tools/env), so a user-edited setting
+    # that changes what render.sh produces (e.g. a reindex cadence) takes
+    # effect on the next session, not only the next dependency bump (issue #60).
     _la_src="${PLUGIN_ROOT}/launchagents"
-    if [ "${NEEDS_BUILD}" = "1" ] && [ -d "${_la_src}" ]; then
-        if [ -d "${_la_src}/scripts" ]; then
-            mkdir -p "${HOME}/.local/share/nextdns-tools"
-            for _s in "${_la_src}"/scripts/*.sh; do
-                [ -e "${_s}" ] && install -m 0755 "${_s}" "${HOME}/.local/share/nextdns-tools/$(basename "${_s}")"
-            done
+    if [ -d "${_la_src}" ]; then
+        _LA_NEEDS_BUILD="${NEEDS_BUILD}"
+        if [ -f "${_la_src}/render.sh" ]; then
+            _LA_ENV_FILE="${HOME}/.config/nextdns-tools/env"
+            _LA_SCHED_GUARD="${PLUGIN_DATA}/schedule.hash"
+            # Guard on the env file existing before hashing it: on a fresh
+            # install (no ~/.config/nextdns-tools/env yet, before `configure
+            # --write`), `cat` on a missing file exits 1, and under
+            # `set -o pipefail` that nonzero status propagates through the
+            # pipe to `shasum`/`awk` and trips `set -e` on this bare
+            # assignment -- aborting the whole script before env.example is
+            # written or the plist is rendered/loaded. A fixed sentinel
+            # for "no env file yet" avoids the pipeline entirely.
+            if [ -f "${_LA_ENV_FILE}" ]; then
+                _LA_SCHED_HASH=$(shasum -a 256 "${_LA_ENV_FILE}" | awk '{print $1}')
+            else
+                _LA_SCHED_HASH="no-env-file"
+            fi
+            if [ ! -f "${_LA_SCHED_GUARD}" ] || [ "$(cat "${_LA_SCHED_GUARD}")" != "${_LA_SCHED_HASH}" ]; then
+                _LA_NEEDS_BUILD=1
+            fi
         fi
-        mkdir -p "${HOME}/Library/LaunchAgents"
-        for _p in "${_la_src}"/*.plist; do
-            [ -e "${_p}" ] || continue
-            _label="$(basename "${_p}" .plist)"
-            _target="${HOME}/Library/LaunchAgents/${_label}.plist"
-            sed "s#__HOME__#${HOME}#g" "${_p}" > "${_target}"
-            # Always unload+load, not skip-if-already-loaded: launchd caches the
-            # job definition it was loaded with, so a label already loaded from a
-            # prior version would otherwise keep running its stale in-memory
-            # ProgramArguments forever, silently diverging from the plist just
-            # rendered above -- this already happened for real (issue #146).
-            launchctl unload "${_target}" 2>/dev/null || true
-            launchctl load -w "${_target}" 2>/dev/null || true
-        done
+        if [ "${_LA_NEEDS_BUILD}" = "1" ]; then
+            if [ -d "${_la_src}/scripts" ]; then
+                mkdir -p "${HOME}/.local/share/nextdns-tools"
+                for _s in "${_la_src}"/scripts/*.sh; do
+                    [ -e "${_s}" ] && install -m 0755 "${_s}" "${HOME}/.local/share/nextdns-tools/$(basename "${_s}")"
+                done
+            fi
+            mkdir -p "${HOME}/Library/LaunchAgents"
+            for _p in "${_la_src}"/*.plist; do
+                [ -e "${_p}" ] || continue
+                _label="$(basename "${_p}" .plist)"
+                _target="${HOME}/Library/LaunchAgents/${_label}.plist"
+                sed "s#__HOME__#${HOME}#g" "${_p}" > "${_target}"
+                # Optional per-plist post-processing (e.g. rendering a
+                # dynamic schedule block from user config); a tool opts in by
+                # shipping launchagents/render.sh. Failure is non-fatal --
+                # worst case the plist keeps its unrendered placeholder and
+                # the launchctl load below no-ops on invalid XML.
+                if [ -f "${_la_src}/render.sh" ]; then
+                    bash "${_la_src}/render.sh" "${_target}" || true
+                fi
+                # Always unload+load, not skip-if-already-loaded: launchd caches the
+                # job definition it was loaded with, so a label already loaded from a
+                # prior version would otherwise keep running its stale in-memory
+                # ProgramArguments forever, silently diverging from the plist just
+                # rendered above -- this already happened for real (issue #146).
+                launchctl unload "${_target}" 2>/dev/null || true
+                launchctl load -w "${_target}" 2>/dev/null || true
+            done
+            if [ -n "${_LA_SCHED_HASH:-}" ]; then
+                echo "${_LA_SCHED_HASH}" > "${_LA_SCHED_GUARD}"
+            fi
+        fi
     fi
 
     # Write env.example on first install so users know where to put env vars.
