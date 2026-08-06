@@ -43,7 +43,7 @@ mcp/
 │   ├── homeops/, lawnops/      # launchagents/: plist templates (__HOME__) + ops
 │   │                           # scripts, shipped in the plugin and auto-loaded
 │   ├── contacts-tools/         # mrlesmithjr-mcp-contacts-tools (Google People API; ContactsManager/PyObjC retained but unwired)
-│   └── ...                     # 15 packages total; the 14 plugins share this layout
+│   └── ...                     # 14 packages total; the 13 plugins share this layout
 ├── scripts/
 │   ├── gen_marketplace.py      # Reads packages/*/pyproject.toml, emits per-package files
 │   └── install_launchagents.sh # Manual/dev re-install of all LaunchAgents from the checkout

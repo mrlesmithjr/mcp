@@ -123,7 +123,6 @@ package's `[project.scripts]`), or use this table:
 | mail-tools | `mail-mcp` |
 | imessage-tools | `imessage-mcp` |
 | homeops | `homeops-mcp` |
-| flightops | `flightops-mcp` |
 | launchd-tools | `launchd-tools-mcp` |
 
 Note the inconsistency: most drop `-tools` (`ynab-tools` -> `ynab-mcp`), some keep it

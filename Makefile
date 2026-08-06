@@ -70,7 +70,6 @@ check:
 	@uv run ruff format --check packages/
 	@uv sync --extra dashboard \
 		--package mrlesmithjr-mcp-common \
-		--package mrlesmithjr-mcp-flightops \
 		--package mrlesmithjr-mcp-homeops \
 		--package mrlesmithjr-mcp-launchd-tools \
 		--package mrlesmithjr-mcp-lawnops \
@@ -84,7 +83,7 @@ check:
 		--package mrlesmithjr-mcp-contacts-tools \
 		--package mrlesmithjr-mcp-imessage-tools \
 		--package mrlesmithjr-mcp-mail-tools
-	@for pkg in mcp-common flightops homeops launchd-tools lawnops \
+	@for pkg in mcp-common homeops launchd-tools lawnops \
 	            nextdns-tools obsidian-search-tools sheets-tools unifi-tools \
 	            weather-tools ynab-tools apple-eventkit-tools \
 	            contacts-tools imessage-tools mail-tools; do \

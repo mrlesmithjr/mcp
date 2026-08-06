@@ -77,9 +77,10 @@ def task_list() -> str:
     days_until, overdue, notes, active}]}
     """
     try:
-        from homeops.db.tasks import list_tasks
+        from homeops import log_compute, log_store
 
-        tasks = list_tasks(_config())
+        rows = log_store.read_table(_config(), "tasks")
+        tasks = log_compute.list_tasks(rows)
         return json.dumps({"tasks": tasks, "count": len(tasks)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -92,9 +93,10 @@ def task_overdue() -> str:
     Returns JSON: {tasks: [{name, category, next_due, days_until, overdue}]}
     """
     try:
-        from homeops.db.tasks import get_overdue
+        from homeops import log_compute, log_store
 
-        tasks = get_overdue(_config())
+        rows = log_store.read_table(_config(), "tasks")
+        tasks = log_compute.get_overdue(rows)
         return json.dumps({"tasks": tasks, "count": len(tasks)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -104,9 +106,10 @@ def task_overdue() -> str:
 def task_history(task_name: str) -> str:
     """Show completion history for a specific task."""
     try:
-        from homeops.db.tasks import get_task_history
+        from homeops import log_compute, log_store
 
-        history = get_task_history(_config(), task_name)
+        rows = log_store.read_table(_config(), "task_log")
+        history = log_compute.task_history(rows, task_name)
         return json.dumps({"history": history, "count": len(history)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -116,10 +119,46 @@ def task_history(task_name: str) -> str:
 def task_done(name: str, date: str = None, cost: float = None, provider: str = None, notes: str = None) -> str:
     """Mark a recurring maintenance task as completed."""
     try:
-        from homeops.db.tasks import mark_done
+        from datetime import date as _date
 
-        result = mark_done(_config(), name, cost=cost, provider=provider, notes=notes, done_date=date)
-        return json.dumps(result)
+        from homeops import log_compute, log_store
+
+        config = _config()
+        tasks_rows = log_store.read_table(config, "tasks")
+        task = log_compute.match_single_active_task(tasks_rows, name)
+
+        done_date = date if date is not None else _date.today().isoformat()
+        next_due = log_compute.compute_next_due(done_date, task["interval_days"])
+
+        log_store.update_row(config, "tasks", {"id": task["id"]}, {"last_done": done_date, "next_due": next_due})
+        task_log_row = log_store.append_row(
+            config,
+            "task_log",
+            {"task": task["name"], "date": done_date, "cost": cost, "provider": provider, "notes": notes},
+        )
+        if cost and cost > 0:
+            # source_id mirrors pre-#58 mark_done's `last_insert_rowid()`
+            # of the task_log row just appended above (sqlite only -- the
+            # markdown backend's append_row doesn't return a stable id, so
+            # this is None there, matching costs.source_id's None passthrough).
+            log_store.append_row(
+                config,
+                "costs",
+                {
+                    "date": done_date,
+                    "category": task["category"],
+                    "amount": cost,
+                    "provider": provider,
+                    "description": task["name"],
+                    "source": "task_log",
+                    "source_id": task_log_row.get("id"),
+                    "notes": None,
+                },
+            )
+
+        return json.dumps(
+            {"name": task["name"], "done_date": done_date, "next_due": next_due, "cost": cost, "provider": provider}
+        )
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -128,10 +167,16 @@ def task_done(name: str, date: str = None, cost: float = None, provider: str = N
 def task_add(name: str, category: str, interval: str, notes: str = None) -> str:
     """Add a new recurring maintenance task."""
     try:
-        from homeops.db.tasks import add_task
+        from homeops import log_store
+        from homeops.db.tasks import parse_interval
 
-        result = add_task(_config(), name, category, interval, notes=notes)
-        return json.dumps(result)
+        interval_days = parse_interval(interval)
+        log_store.append_row(
+            _config(),
+            "tasks",
+            {"name": name, "category": category, "interval_days": interval_days, "notes": notes},
+        )
+        return json.dumps({"name": name, "category": category, "interval_days": interval_days})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -147,10 +192,16 @@ def task_add(name: str, category: str, interval: str, notes: str = None) -> str:
 def task_pause(name: str) -> str:
     """Pause (deactivate) a recurring task without deleting it."""
     try:
-        from homeops.db.tasks import pause_task
+        from homeops import log_compute, log_store
 
-        result = pause_task(_config(), name)
-        return json.dumps(result)
+        config = _config()
+        rows = log_store.read_table(config, "tasks")
+        matched = log_compute.match_tasks_by_name_and_active(rows, name, True)
+        if not matched:
+            raise RuntimeError(f"No active task matching '{name}'.")
+        for t in matched:
+            log_store.update_row(config, "tasks", {"id": t["id"]}, {"active": 0})
+        return json.dumps({"name": name, "paused": True})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -166,10 +217,16 @@ def task_pause(name: str) -> str:
 def task_resume(name: str) -> str:
     """Resume a previously paused recurring task."""
     try:
-        from homeops.db.tasks import resume_task
+        from homeops import log_compute, log_store
 
-        result = resume_task(_config(), name)
-        return json.dumps(result)
+        config = _config()
+        rows = log_store.read_table(config, "tasks")
+        matched = log_compute.match_tasks_by_name_and_active(rows, name, False)
+        if not matched:
+            raise RuntimeError(f"No paused task matching '{name}'.")
+        for t in matched:
+            log_store.update_row(config, "tasks", {"id": t["id"]}, {"active": 1})
+        return json.dumps({"name": name, "resumed": True})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -178,9 +235,9 @@ def task_resume(name: str) -> str:
 def task_delete(name: str) -> str:
     """Delete a recurring task by name (partial match)."""
     try:
-        from homeops.db.tasks import delete_task
+        from homeops import log_store
 
-        rowcount = delete_task(_config(), name)
+        rowcount = log_store.delete_row(_config(), "tasks", {"name_contains": name})
         result = {"name": name, "deleted": rowcount}
         if rowcount == 0:
             result["warning"] = f"No task found matching '{name}'"
@@ -196,9 +253,10 @@ def task_delete(name: str) -> str:
 def pest_history(year: str = None) -> str:
     """View pest control treatment history."""
     try:
-        from homeops.db.pest import list_pest_history
+        from homeops import log_compute, log_store
 
-        treatments = list_pest_history(_config(), year)
+        rows = log_store.read_table(_config(), "pest_treatments")
+        treatments = log_compute.list_pest_history(rows, year)
         return json.dumps({"treatments": treatments, "count": len(treatments)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -208,10 +266,33 @@ def pest_history(year: str = None) -> str:
 def pest_add(date: str, area: str, product: str, method: str = None, notes: str = None, cost: float = None) -> str:
     """Log a pest control treatment."""
     try:
-        from homeops.db.pest import add_pest_treatment
+        from homeops import log_store
 
-        result = add_pest_treatment(_config(), date, area, product, method=method, notes=notes, cost=cost)
-        return json.dumps(result)
+        config = _config()
+        log_store.append_row(
+            config,
+            "pest_treatments",
+            {"date": date, "area": area, "product": product, "method": method, "notes": notes, "cost": cost},
+        )
+        # Mirrors homeops.db.pest.add_pest_treatment's dual-write into the
+        # unified costs ledger, orchestrated here (not inside the sqlite
+        # backend) so both backends behave identically -- see
+        # log_backends/sqlite_backend.py's module docstring.
+        if cost and cost > 0:
+            log_store.append_row(
+                config,
+                "costs",
+                {
+                    "date": date,
+                    "category": "pest",
+                    "amount": cost,
+                    "provider": None,
+                    "description": f"{product} - {area}",
+                    "source": "pest_treatment",
+                    "notes": None,
+                },
+            )
+        return json.dumps({"date": date, "area": area, "product": product, "method": method, "cost": cost})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -220,9 +301,9 @@ def pest_add(date: str, area: str, product: str, method: str = None, notes: str 
 def pest_delete(id: int) -> str:
     """Delete a pest treatment by ID."""
     try:
-        from homeops.db.pest import delete_pest_treatment
+        from homeops import log_store
 
-        deleted = delete_pest_treatment(_config(), id)
+        deleted = bool(log_store.delete_row(_config(), "pest_treatments", {"id": id}))
         result = {"id": id, "deleted": deleted}
         if not deleted:
             result["warning"] = f"No pest treatment found with id {id}"
@@ -238,9 +319,10 @@ def pest_delete(id: int) -> str:
 def provider_list(category: str = None) -> str:
     """List service providers with contact info and typical costs."""
     try:
-        from homeops.db.providers import list_providers
+        from homeops import log_compute, log_store
 
-        providers = list_providers(_config(), category)
+        rows = log_store.read_table(_config(), "providers")
+        providers = log_compute.list_providers(rows, category)
         return json.dumps({"providers": providers, "count": len(providers)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -250,9 +332,12 @@ def provider_list(category: str = None) -> str:
 def provider_detail(name: str) -> str:
     """Show detailed provider info with cost history."""
     try:
-        from homeops.db.providers import get_provider_detail
+        from homeops import log_compute, log_store
 
-        provider = get_provider_detail(_config(), name)
+        config = _config()
+        providers_rows = log_store.read_table(config, "providers")
+        costs_rows = log_store.read_table(config, "costs")
+        provider = log_compute.get_provider_detail(providers_rows, costs_rows, name)
         if provider is None:
             return json.dumps({"error": f"No provider matching '{name}'"})
         return json.dumps(provider)
@@ -267,9 +352,10 @@ def provider_detail(name: str) -> str:
 def appliance_list(category: str = None) -> str:
     """List all registered appliances with age, warranty status, and remaining lifespan."""
     try:
-        from homeops.db.appliances import list_appliances
+        from homeops import log_compute, log_store
 
-        appliances = list_appliances(_config(), category)
+        rows = log_store.read_table(_config(), "appliances")
+        appliances = log_compute.list_appliances(rows, category)
         return json.dumps({"appliances": appliances, "count": len(appliances)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -282,11 +368,12 @@ def appliance_alerts() -> str:
     Returns JSON: {expiring_warranties: [...], aging: [...]}
     """
     try:
-        from homeops.db.appliances import get_aging_appliances, get_expiring_warranties
+        from homeops import log_compute, log_store
 
-        config = _config()
-        expiring = get_expiring_warranties(config)
-        aging = get_aging_appliances(config)
+        rows = log_store.read_table(_config(), "appliances")
+        appliances = log_compute.list_appliances(rows)
+        expiring = log_compute.get_expiring_warranties(appliances)
+        aging = log_compute.get_aging_appliances(appliances)
         return json.dumps(
             {
                 "expiring_warranties": expiring,
@@ -305,9 +392,10 @@ def appliance_alerts() -> str:
 def utility_summary(year: str = None) -> str:
     """Utility bill spending summary by type (water, electric, gas, etc.)."""
     try:
-        from homeops.db.utilities import get_utility_summary
+        from homeops import log_compute, log_store
 
-        summary = get_utility_summary(_config(), year)
+        rows = log_store.read_table(_config(), "utility_bills")
+        summary = log_compute.get_utility_summary(rows, year)
         total = sum(s["total"] for s in summary) if summary else 0
         return json.dumps({"summary": summary, "total": total, "year": year})
     except Exception as e:
@@ -318,9 +406,10 @@ def utility_summary(year: str = None) -> str:
 def utility_trend(utility_type: str, months: int = 12) -> str:
     """Monthly trend for a specific utility type."""
     try:
-        from homeops.db.utilities import get_utility_trend
+        from homeops import log_compute, log_store
 
-        bills = get_utility_trend(_config(), utility_type, months)
+        rows = log_store.read_table(_config(), "utility_bills")
+        bills = log_compute.get_utility_trend(rows, utility_type, months)
         total = sum(b["amount"] for b in bills) if bills else 0
         avg = total / len(bills) if bills else 0
         return json.dumps(
@@ -340,10 +429,36 @@ def utility_trend(utility_type: str, months: int = 12) -> str:
 def utility_add(date: str, utility_type: str, amount: float, notes: str = None) -> str:
     """Log a monthly utility bill."""
     try:
-        from homeops.db.utilities import add_utility_bill
+        from homeops import log_store
+        from homeops.db.utilities import VALID_TYPES
 
-        result = add_utility_bill(_config(), date, utility_type, amount, notes=notes)
-        return json.dumps(result)
+        utility_type = utility_type.lower()
+        if utility_type not in VALID_TYPES:
+            raise RuntimeError(f"Invalid utility type '{utility_type}'. Valid: {', '.join(VALID_TYPES)}")
+
+        config = _config()
+        log_store.append_row(
+            config,
+            "utility_bills",
+            {"bill_date": date, "type": utility_type, "amount": amount, "usage": None, "notes": notes},
+        )
+        # Mirrors homeops.db.utilities.add_utility_bill's dual-write into the
+        # unified costs ledger, orchestrated here so both backends behave
+        # identically -- see log_backends/sqlite_backend.py's module docstring.
+        log_store.append_row(
+            config,
+            "costs",
+            {
+                "date": date + "-01",
+                "category": f"utility:{utility_type}",
+                "amount": amount,
+                "provider": None,
+                "description": f"{utility_type} bill",
+                "source": "utility",
+                "notes": None,
+            },
+        )
+        return json.dumps({"date": date, "type": utility_type, "amount": amount, "usage": None})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -352,9 +467,9 @@ def utility_add(date: str, utility_type: str, amount: float, notes: str = None) 
 def utility_delete(id: int) -> str:
     """Delete a utility bill by ID."""
     try:
-        from homeops.db.utilities import delete_utility_bill
+        from homeops import log_store
 
-        deleted = delete_utility_bill(_config(), id)
+        deleted = bool(log_store.delete_row(_config(), "utility_bills", {"id": id}))
         result = {"id": id, "deleted": deleted}
         if not deleted:
             result["warning"] = f"No utility bill found with id {id}"
@@ -370,9 +485,10 @@ def utility_delete(id: int) -> str:
 def cost_summary(year: str = None) -> str:
     """Home maintenance spending summary by category."""
     try:
-        from homeops.db.costs import get_cost_summary
+        from homeops import log_compute, log_store
 
-        summary = get_cost_summary(_config(), year)
+        rows = log_store.read_table(_config(), "costs")
+        summary = log_compute.get_cost_summary(rows, year)
         total = sum(s["total"] for s in summary) if summary else 0
         return json.dumps({"summary": summary, "total": total, "year": year})
     except Exception as e:
@@ -383,9 +499,10 @@ def cost_summary(year: str = None) -> str:
 def cost_history(year: str = None, category: str = None) -> str:
     """Home maintenance cost line items."""
     try:
-        from homeops.db.costs import get_cost_history
+        from homeops import log_compute, log_store
 
-        costs = get_cost_history(_config(), year, category)
+        rows = log_store.read_table(_config(), "costs")
+        costs = log_compute.get_cost_history(rows, year, category)
         return json.dumps({"costs": costs, "count": len(costs)})
     except Exception as e:
         return json.dumps({"error": str(e)})
@@ -395,10 +512,21 @@ def cost_history(year: str = None, category: str = None) -> str:
 def cost_add(date: str, category: str, amount: float, description: str, provider: str = None, notes: str = None) -> str:
     """Log a home maintenance cost."""
     try:
-        from homeops.db.costs import add_cost
+        from homeops import log_store
 
-        result = add_cost(_config(), date, category, amount, provider=provider, description=description, notes=notes)
-        return json.dumps(result)
+        log_store.append_row(
+            _config(),
+            "costs",
+            {
+                "date": date,
+                "category": category,
+                "amount": amount,
+                "provider": provider,
+                "description": description,
+                "notes": notes,
+            },
+        )
+        return json.dumps({"date": date, "category": category, "amount": amount, "provider": provider})
     except Exception as e:
         return json.dumps({"error": str(e)})
 
@@ -407,9 +535,9 @@ def cost_add(date: str, category: str, amount: float, description: str, provider
 def cost_delete(id: int) -> str:
     """Delete a cost entry by ID."""
     try:
-        from homeops.db.costs import delete_cost
+        from homeops import log_store
 
-        deleted = delete_cost(_config(), id)
+        deleted = bool(log_store.delete_row(_config(), "costs", {"id": id}))
         result = {"id": id, "deleted": deleted}
         if not deleted:
             result["warning"] = f"No cost entry found with id {id}"

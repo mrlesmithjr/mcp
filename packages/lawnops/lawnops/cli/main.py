@@ -237,6 +237,14 @@ def main():
     ynab_parser.add_argument("--year", type=int, help="Year to import (default: all)")
     ynab_parser.add_argument("--preview", action="store_true", help="Preview what would be imported without writing")
 
+    # db log-export
+    log_export_parser = db_sub.add_parser(
+        "log-export", help="Seed the lawn_log markdown backend from existing SQLite rows"
+    )
+    log_export_parser.add_argument(
+        "--preview", action="store_true", help="Print row counts without writing the markdown file(s)"
+    )
+
     args = parser.parse_args()
 
     # Default to 'now' if no command given
@@ -485,6 +493,13 @@ def _handle_db(
             else:
                 mowing_count, purchase_count, skip_count = db.import_from_ynab(config, year)
                 display.display_ynab_import(mowing_count, purchase_count, skip_count)
+
+        elif db_cmd == "log-export":
+            from lawnops.log_migrate import export_log
+
+            preview = getattr(args, "preview", False)
+            counts = export_log(config, preview=preview)
+            display.display_log_export(counts, preview)
 
     except RuntimeError as e:
         print(f"Error: {e}", file=sys.stderr)
