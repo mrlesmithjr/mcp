@@ -3,7 +3,7 @@
 Guidance for Claude Code when working in the `mcp` uv workspace.
 
 **Status**: ACTIVE
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-08-07
 
 ---
 
@@ -158,7 +158,7 @@ in [`docs/where-tools-run.md`](docs/where-tools-run.md).
 Do **not** install the marketplace plugin on a dev machine. `dev/register_dev.py`
 states the rule directly: marketplace plugins are consumer-only. A plugin install
 clones the package and builds its own venv, so you end up running a frozen copy of
-the code you are editing — and `install_deps.sh` unconditionally re-points
+the code you are editing -- and `install_deps.sh` unconditionally re-points
 `~/.local/bin/<cli>` at that venv on every run, silently taking the CLI away from the
 workspace build.
 
@@ -168,8 +168,8 @@ plugin runtime supplying `CLAUDE_PLUGIN_ROOT`/`CLAUDE_PLUGIN_DATA`, it falls bac
 plugin behind it. It also installs **unlocked** (`uv pip install ${PLUGIN_ROOT}`), so
 it can resolve dependency versions the workspace lockfile would never pick.
 
-For Claude Desktop specifics — absolute path requirement, credential handling,
-verifying with a raw MCP handshake, troubleshooting — see
+For Claude Desktop specifics -- absolute path requirement, credential handling,
+verifying with a raw MCP handshake, troubleshooting -- see
 `packages/ynab-tools/docs/mcp-server.md`, which is the worked reference for any tool
 in this workspace.
 
@@ -292,6 +292,59 @@ is the reference implementation (issue #20): its tools are all closed-world, so 
 shared `_READ_ONLY` constant carries `readOnlyHint=True, openWorldHint=False`. Each
 package's test suite asserts the registered tools' annotations via
 `mcp._tool_manager.list_tools()`.
+
+---
+
+## Deterministic checks replace `claude -p` invocations (issue #146)
+
+Several LaunchAgent-scheduled checks in lawnops and homeops used to shell out to `claude -p`
+for a decision that was really just a simple deterministic threshold:
+`com.lawnops.irrigation-check`, `com.lawnops.bermuda-greenup`, `com.homeops.utility-anomaly`,
+and `com.homeops.task-escalation`. Issue #146 replaced all four wrapper scripts with plain
+Python decision functions (unit-testable with no mocking, same verdict every time for the
+same inputs) called directly from each tool's CLI command. As of issue #39, none of them
+create an Apple Reminder any more: `reminders.py` and the `mrlesmithjr-mcp-apple-eventkit-tools`
+dependency were removed from both packages entirely, since Reminders is deprecated as a
+delivery channel (issue #37 already removed the LaunchAgents that would have scheduled these
+checks). Each command is now a read-only report -- it prints what it found and exits. See
+lawnops'/homeops' own CLAUDE.md for which function backs which command.
+
+---
+
+## Prompt injection guarding (`prompt-security-utils`)
+
+mail-tools, apple-eventkit-tools, contacts-tools, and sheets-tools each return externally-
+authored content (email, calendar/reminder data, contacts, spreadsheet cells) into the
+model's context alongside their own write-capable tools, making attacker-controlled content
+in that data an indirect-prompt-injection vector. All four guard against it the same way,
+via the `prompt-security-utils` PyPI library (MIT, `andmarios/prompt-security-utils`):
+
+- `generate_markers()` runs once at module load to produce a session-unique
+  `(_MARKER_START, _MARKER_END)` pair.
+- `security_instructions()` folds those markers into the `FastMCP(instructions=...)` string --
+  the trusted channel the model reads before any untrusted content -- appended after, not
+  replacing, each server's existing tool-usage guidance.
+- A thin per-package wrapper over the library's `wrap_field()` (typically
+  `_wrap_untrusted_field()`) wraps untrusted string fields at the tool-return boundary, just
+  before `json.dumps`. `wrap_field()` returns `None` unchanged for a `None` input, so an
+  absent field stays absent. A field with no fixed shape (a 2D cell matrix, an enrichment
+  source's arbitrary keys) is JSON-serialized and wrapped as one blob via
+  `wrap_external_data()` instead of per-item, to avoid multiplying wrapper overhead across
+  hundreds of items for no real security benefit.
+- Each package constructs its own `SecurityConfig(semantic_enabled=False,
+  llm_screen_enabled=False)` directly rather than calling the library's `load_config()`
+  (which reads a shared `~/.config/prompt-security-utils/config.json` any tool could also
+  write to) -- this keeps wrapping deterministic and scoped to marker-wrapping plus the
+  library's regex `detection_enabled` tier. The semantic tier is left off everywhere:
+  enabling it triggers a `fastembed` transformer model download on first use.
+- Install-weight caveat, independent of `semantic_enabled`: `prompt-security-utils` pulls in
+  `fastembed` and its `onnxruntime` dependency (~68MB installed) as a hard, unconditional
+  dependency with no optional-extras mechanism, so every one of these four packages pays
+  that install weight on every SessionStart venv rebuild regardless of the flag.
+
+What gets wrapped is package-specific -- caller-supplied, freshly-created content is never
+wrapped; pre-existing or externally-sourced content always is. See each package's own
+CLAUDE.md for its field-by-field table.
 
 ---
 

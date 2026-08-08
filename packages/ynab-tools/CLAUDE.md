@@ -56,6 +56,9 @@ This applies even when the dashboard is not the focus of the change. Any reinsta
 
 ## Setup & Commands
 
+Full command reference (every subcommand, flag, and option): [`docs/commands.md`](docs/commands.md).
+The handful below cover day-to-day use.
+
 ```bash
 # Install (base only)
 uv tool install .
@@ -72,131 +75,20 @@ ynab plans           # List all YNAB budget plans (use during setup to find plan
 # Credentials can also be set via env vars (override config file)
 # YNAB_ACCESS_TOKEN, YNAB_PLAN_ID (also accepts YNAB_BUDGET_ID)
 
-# Core commands
-ynab sync                  # Delta sync (uses server_knowledge)
-ynab sync --full           # Force full sync, ignore delta state
-ynab sync --status         # Show DB stats without syncing
-ynab sync --months 24      # Sync 24 months of history
-
-# Payee management
-ynab payee audit           # Find payee/import name mismatches
-ynab payee preview         # Dry-run fixes from payee_rules.json
-ynab payee fix             # Apply fixes (writes to YNAB API)
-ynab payee normalize       # Find duplicate payee names
-ynab payee normalize --apply
-ynab payee orphaned        # Payees with zero transactions
-ynab payee validate        # Check rules reference valid canonical names
-ynab payee create "Name"   # Create a new payee
-ynab payee backups         # List backup files
-ynab payee restore <file>  # Restore from backup
-
-# Reports & analysis
-ynab budget                # RTA, overspent, near-limit, underfunded, health ratios
-ynab budget --cc-audit     # Credit card payment vs balance audit
-ynab spending              # Current month by category vs budget targets
-ynab spending breakdown    # Fixed vs discretionary spending breakdown
-ynab spending breakdown --months 3  # Breakdown over N months
-ynab two-pot               # Two-pot structural compliance per bonus month (last 3)
-ynab two-pot --months 6    # Last 6 bonus months
-ynab two-pot --month 2026-04  # Specific bonus month
-ynab spending-pace         # Mid-month spending pace per category vs budget (DB-only)
-ynab spending-pace --month 2026-04  # Specific month
-ynab trends <category>     # 6-month spending trend for a category
-ynab debt                  # Debt accounts, balances, payoff estimates
-ynab recent                # Last 25 transactions (split-aware)
-ynab recent -n 50          # Last 50 transactions
-# Supports --account, --payee, --category, --memo filters
-ynab large                 # Expenses >$500 (last 6 months); supports --threshold, --months
-ynab sinking-funds         # Goal balances, underfunded status
-ynab income                # Regular pay, bonuses, YTD comparison
-ynab income --months 24    # More history
-ynab fund "Groceries" 850  # Set category budget to $850
-ynab fund "Groceries" +100 # Add $100 to current budget
-ynab fund status           # Target vs avg spend vs recommendation per category
-ynab fund log              # Show last 20 funding log entries
-ynab fund log 50           # Show last 50 funding log entries
-ynab fund goals            # Dry-run: fund all underfunded goals
-ynab fund goals --apply    # Push goal funding to YNAB
-# Note: category names literally named "status", "log", or "goals" require group prefix:
-#   ynab fund "Monthly Bills: goals" 500
-ynab transfers             # Recent transfers (last 30 days)
-ynab transfers --days 60   # More history
-ynab balance "Emergency Fund"  # Look up any category balance
-ynab retirement            # Retirement balances and contributions
-ynab retirement --project  # Growth projections to retirement
-
-# Transaction management
-ynab add "Checking" 45.00 --payee "Kroger" --category "Groceries"
-ynab add "Checking" 45.00 --payee "Kroger" --apply  # Skip confirmation
-ynab split                 # Find split candidates
-ynab split 1 --apply       # Apply a suggested split
-
-# Category management
-ynab category create-group "New Group"           # Create a category group
-ynab category create "New Category" --group "Monthly Bills"
-ynab category set-goal "Groceries" 900          # Monthly funding target
-ynab category set-goal "Vacation" 5000 --type TBD --by-date 2026-12
-ynab category clear-goal "Old Category"
-
-# Planned expenses
-ynab plan                  # List active planned expenses
-ynab plan add "Spa" 165 --by 2026-04-15 --memo "Appointment next month"
-ynab plan done 1           # Mark as completed
-ynab plan remove 2         # Delete a planned expense
-
-# Account reconciliation
-ynab reconcile                     # Status for all accounts
-ynab reconcile "Checking" 1234.56  # Compare to actual balance
-ynab reconcile "Checking" 1234.56 --apply  # Create adjustment
-
-# Audit log
-ynab audit                 # Last 30 actions
-ynab audit -n 50           # More entries
-ynab audit --action set-goal  # Filter by action type
-
-# Transaction review
-ynab unapproved            # List unapproved transactions (API-verified)
-ynab approve TX_ID         # Approve a single transaction
-ynab approve TX_ID --apply # Skip confirmation
-ynab approve --all         # Approve all categorized unapproved transactions
-ynab approve --all --apply # Skip confirmation
-ynab update TX_ID --category "Cat"  # Change transaction category
-ynab update TX_ID --memo "text"     # Change transaction memo
-ynab delete TX_ID                   # Delete a transaction
-ynab delete TX_ID --apply           # Skip confirmation
-
-# Paycheck funding
-ynab paycheck              # Forecast upcoming paychecks
-ynab breakdown             # Budget split: regular-paycheck-funded vs bonus-funded categories
-ynab bonus-split           # Split bonus portion from regular pay for a paycheck
-ynab paycheck-funding                          # Preview tier-based funding plan (dry-run)
-ynab paycheck-funding --apply                  # Apply through Tier 2 (safe default)
-ynab paycheck-funding --apply --through-tier 4 # Apply through Tier 4
-ynab paycheck-funding --month 2026-05          # Target a specific month
-
-# Other
-ynab categorize            # Suggest categories for uncategorized txns
-ynab categorize --apply    # Push high-confidence suggestions
-ynab net-worth             # Take net worth snapshot
-ynab net-worth --history   # Show history
-ynab subscriptions         # Recurring subscription detection: frequency, monthly/annual cost, next renewal
-ynab import brokerage <csv> [--preview] [-o output.csv]
-ynab import boa <csv> [--preview] [-o output.csv] [--push --account "Name"]  # Bank of America CSV to YNAB format
-ynab import positions <csv>           # Preview Fidelity positions
-ynab import positions <csv> --reconcile --apply  # Apply reconciliation
+# Most-used commands - see docs/commands.md for payee/category/reconcile/import/audit/etc.
+ynab sync                                       # Delta sync (uses server_knowledge)
+ynab budget                                     # RTA, overspent, near-limit, underfunded, health ratios
+ynab spending                                   # Current month by category vs budget targets
+ynab recent                                     # Last 25 transactions (split-aware)
+ynab unapproved                                 # List unapproved transactions (API-verified)
+ynab fund "Groceries" 850                       # Set category budget to $850
+ynab paycheck-funding --apply --through-tier 2  # Apply tier-based funding plan (safe default)
+ynab net-worth                                  # Take net worth snapshot
 
 # Web dashboard (requires dashboard extra: uv tool install ".[dashboard]")
-ynab dashboard                         # No subcommand: shows status output (same as ynab dashboard status)
-ynab dashboard install                 # Install as macOS LaunchAgent (auto-syncs hourly)
-ynab dashboard status                  # Running/stopped, URL, recent log lines
-ynab dashboard restart                 # Restart after upgrades
-ynab dashboard logs                    # Tail the log file
-ynab dashboard uninstall               # Stop and remove the LaunchAgent
-ynab dashboard start                   # Foreground mode - http://127.0.0.1:8000
-ynab dashboard start --port 8080       # Custom port
-ynab dashboard start --reload          # Dev mode with auto-reload
-ynab dashboard start --sync-interval 60  # Auto-sync every 60 minutes
-# Optional HTTP Basic auth: set DASHBOARD_PASSWORD env var (or config.json key dashboard_password).
+ynab dashboard install    # Install as macOS LaunchAgent (auto-syncs hourly)
+ynab dashboard status     # Running/stopped, URL, recent log lines
+ynab dashboard restart    # Restart after upgrades
 ```
 
 ## Architecture
