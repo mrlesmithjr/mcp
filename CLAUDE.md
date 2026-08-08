@@ -219,13 +219,7 @@ make ship TOOL=unifi-tools              # bump -> commit -> push develop -> rele
 make release                            # promote current develop to main via CI-gated PR, then tag each plugin
 ```
 
-`main` cannot use server-side branch protection (private repo on the free
-plan), so `make hooks` installs a repo-local `pre-push` guard (`.githooks/`,
-via `core.hooksPath`) that blocks direct pushes to `main` and delegates to the
-global privacy hook. It is machine-local and bypassable with `--no-verify`;
-true server-side rulesets get applied when the repo goes public (issue #2).
-`core.hooksPath` is local config and is not cloned, so re-run `make hooks`
-after a fresh clone.
+`main` is protected by a repo-local `pre-push` guard installed via `make hooks` -- run once per clone, since `core.hooksPath` is local config and is not cloned. Day-to-day work happens on `develop`; see `.githooks/pre-push` for the guard's mechanics (issue #2).
 
 Per-package versions are the single source of truth; `gen_marketplace.py`
 propagates a bump into `marketplace.json` and the per-plugin `plugin.json`.
@@ -295,19 +289,14 @@ package's test suite asserts the registered tools' annotations via
 
 ---
 
-## Deterministic checks replace `claude -p` invocations (issue #146)
+## Deterministic checks, not `claude -p` (issue #146)
 
-Several LaunchAgent-scheduled checks in lawnops and homeops used to shell out to `claude -p`
-for a decision that was really just a simple deterministic threshold:
-`com.lawnops.irrigation-check`, `com.lawnops.bermuda-greenup`, `com.homeops.utility-anomaly`,
-and `com.homeops.task-escalation`. Issue #146 replaced all four wrapper scripts with plain
-Python decision functions (unit-testable with no mocking, same verdict every time for the
-same inputs) called directly from each tool's CLI command. As of issue #39, none of them
-create an Apple Reminder any more: `reminders.py` and the `mrlesmithjr-mcp-apple-eventkit-tools`
-dependency were removed from both packages entirely, since Reminders is deprecated as a
-delivery channel (issue #37 already removed the LaunchAgents that would have scheduled these
-checks). Each command is now a read-only report -- it prints what it found and exits. See
-lawnops'/homeops' own CLAUDE.md for which function backs which command.
+The LaunchAgent-scheduled checks in lawnops and homeops (`com.lawnops.irrigation-check`,
+`com.lawnops.bermuda-greenup`, `com.homeops.utility-anomaly`, `com.homeops.task-escalation`)
+are plain Python decision functions, not `claude -p` calls -- unit-testable, deterministic,
+no Reminders delivery (issue #39, #37). Each command is a read-only report: it prints what
+it found and exits. See lawnops'/homeops' own CLAUDE.md for which function backs which
+command.
 
 ---
 
@@ -356,9 +345,7 @@ Linux CI runner cannot resolve them, so they run in a dedicated `test-macos`
 job (`.github/workflows/ci.yml`); every other package runs in the Linux job.
 homeops and lawnops dropped their apple-eventkit-tools dependency (issue #39)
 and moved to the Linux job; `homeops-coordinator`, the only other transitive
-dependent, was retired outright (issue #40). Keep the macOS job's package
-list minimal -- macOS runner minutes are billed at a 10x multiplier versus
-Linux.
+dependent, was retired outright (issue #40). Keep the macOS job's package list minimal (cost rationale in `ci.yml`).
 
 ---
 
