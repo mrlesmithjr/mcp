@@ -24,7 +24,7 @@ classifiers = [
 dependencies = [
     "mrlesmithjr-mcp-common>=0.1.0",
     "pyobjc-framework-ScriptingBridge>=10.0",
-    "mcp>=1.0,<2",
+    "mcp>=1.29.0,<2",
     "prompt-security-utils>=1.4.0",
 ]
 

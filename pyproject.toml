@@ -14,7 +14,7 @@ mrlesmithjr-mcp-common = { workspace = true }
 [dependency-groups]
 dev = [
     "pytest>=8.0",
-    "ruff>=0.4",
+    "ruff>=0.16.2",
 ]
 
 [tool.ruff]
