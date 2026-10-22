@@ -20,6 +20,8 @@
 
 REPO        := mrlesmithjr/mcp
 BUMP        ?= patch
+# Packages `install-tools` installs as frozen uv tools.
+INSTALL_TOOLS ?= ynab-tools
 # Use the SSH key file directly, bypassing any agent (parity with the
 # context-manager release flow; this repo uses an SSH remote).
 GIT_NOAGENT := GIT_SSH_COMMAND='ssh -o IdentityAgent=none'
@@ -28,7 +30,7 @@ GIT_NOAGENT := GIT_SSH_COMMAND='ssh -o IdentityAgent=none'
 PKG_NAME     = uv run python -c "import tomllib,sys;print(tomllib.load(open('packages/$(1)/pyproject.toml','rb'))['project']['name'])"
 
 .DEFAULT_GOAL := help
-.PHONY: help gen check bump ship release init-develop hooks publish-common check-common-published
+.PHONY: help gen check bump ship release init-develop hooks publish-common check-common-published install-tools
 
 help:
 	@echo "Release tooling for the personal MCP marketplace"
@@ -49,6 +51,8 @@ help:
 	@echo "      One-time per clone: activate the repo-local pre-push main guard."
 	@echo "  make publish-common"
 	@echo "      Build and publish mrlesmithjr-mcp-common to PyPI (needs UV_PUBLISH_TOKEN)."
+	@echo "  make install-tools [INSTALL_TOOLS=\"<slug> ...\"]"
+	@echo "      Install/refresh day-to-day CLIs as frozen uv tools (default: $(INSTALL_TOOLS))."
 	@echo ""
 	@echo "  Tools: $(notdir $(wildcard packages/*))"
 
@@ -143,6 +147,18 @@ check-common-published:
 			exit 1; \
 		fi; \
 	fi
+
+# Install the CLIs used day to day as frozen (non-editable) uv tools from this
+# working tree. Frozen on purpose: source edits go live only when this is
+# re-run (see packages/ynab-tools/CLAUDE.md). These aren't on PyPI, so
+# dotfiles' brewfile-sync leaves them out of the Brewfile; this target is how
+# a machine gets them.
+install-tools:
+	@for t in $(INSTALL_TOOLS); do \
+		test -d "packages/$$t" || { echo "ERROR: packages/$$t does not exist"; exit 1; }; \
+		echo "[install-tools] $$t"; \
+		uv tool install --force "packages/$$t" || exit 1; \
+	done
 
 # Build and publish mcp-common to PyPI. Requires UV_PUBLISH_TOKEN in the env;
 # publishing is intentionally a manual, credentialed step.

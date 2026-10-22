@@ -3,7 +3,7 @@
 Guidance for Claude Code when working in the `mcp` uv workspace.
 
 **Status**: ACTIVE
-**Last Updated**: 2026-07-20
+**Last Updated**: 2026-08-07
 
 ---
 
@@ -158,7 +158,7 @@ in [`docs/where-tools-run.md`](docs/where-tools-run.md).
 Do **not** install the marketplace plugin on a dev machine. `dev/register_dev.py`
 states the rule directly: marketplace plugins are consumer-only. A plugin install
 clones the package and builds its own venv, so you end up running a frozen copy of
-the code you are editing — and `install_deps.sh` unconditionally re-points
+the code you are editing -- and `install_deps.sh` unconditionally re-points
 `~/.local/bin/<cli>` at that venv on every run, silently taking the CLI away from the
 workspace build.
 
@@ -168,8 +168,8 @@ plugin runtime supplying `CLAUDE_PLUGIN_ROOT`/`CLAUDE_PLUGIN_DATA`, it falls bac
 plugin behind it. It also installs **unlocked** (`uv pip install ${PLUGIN_ROOT}`), so
 it can resolve dependency versions the workspace lockfile would never pick.
 
-For Claude Desktop specifics — absolute path requirement, credential handling,
-verifying with a raw MCP handshake, troubleshooting — see
+For Claude Desktop specifics -- absolute path requirement, credential handling,
+verifying with a raw MCP handshake, troubleshooting -- see
 `packages/ynab-tools/docs/mcp-server.md`, which is the worked reference for any tool
 in this workspace.
 
@@ -219,13 +219,7 @@ make ship TOOL=unifi-tools              # bump -> commit -> push develop -> rele
 make release                            # promote current develop to main via CI-gated PR, then tag each plugin
 ```
 
-`main` cannot use server-side branch protection (private repo on the free
-plan), so `make hooks` installs a repo-local `pre-push` guard (`.githooks/`,
-via `core.hooksPath`) that blocks direct pushes to `main` and delegates to the
-global privacy hook. It is machine-local and bypassable with `--no-verify`;
-true server-side rulesets get applied when the repo goes public (issue #2).
-`core.hooksPath` is local config and is not cloned, so re-run `make hooks`
-after a fresh clone.
+`main` is protected by a repo-local `pre-push` guard installed via `make hooks` -- run once per clone, since `core.hooksPath` is local config and is not cloned. Day-to-day work happens on `develop`; see `.githooks/pre-push` for the guard's mechanics (issue #2).
 
 Per-package versions are the single source of truth; `gen_marketplace.py`
 propagates a bump into `marketplace.json` and the per-plugin `plugin.json`.
@@ -295,6 +289,54 @@ package's test suite asserts the registered tools' annotations via
 
 ---
 
+## Deterministic checks, not `claude -p` (issue #146)
+
+The LaunchAgent-scheduled checks in lawnops and homeops (`com.lawnops.irrigation-check`,
+`com.lawnops.bermuda-greenup`, `com.homeops.utility-anomaly`, `com.homeops.task-escalation`)
+are plain Python decision functions, not `claude -p` calls -- unit-testable, deterministic,
+no Reminders delivery (issue #39, #37). Each command is a read-only report: it prints what
+it found and exits. See lawnops'/homeops' own CLAUDE.md for which function backs which
+command.
+
+---
+
+## Prompt injection guarding (`prompt-security-utils`)
+
+mail-tools, apple-eventkit-tools, contacts-tools, and sheets-tools each return externally-
+authored content (email, calendar/reminder data, contacts, spreadsheet cells) into the
+model's context alongside their own write-capable tools, making attacker-controlled content
+in that data an indirect-prompt-injection vector. All four guard against it the same way,
+via the `prompt-security-utils` PyPI library (MIT, `andmarios/prompt-security-utils`):
+
+- `generate_markers()` runs once at module load to produce a session-unique
+  `(_MARKER_START, _MARKER_END)` pair.
+- `security_instructions()` folds those markers into the `FastMCP(instructions=...)` string --
+  the trusted channel the model reads before any untrusted content -- appended after, not
+  replacing, each server's existing tool-usage guidance.
+- A thin per-package wrapper over the library's `wrap_field()` (typically
+  `_wrap_untrusted_field()`) wraps untrusted string fields at the tool-return boundary, just
+  before `json.dumps`. `wrap_field()` returns `None` unchanged for a `None` input, so an
+  absent field stays absent. A field with no fixed shape (a 2D cell matrix, an enrichment
+  source's arbitrary keys) is JSON-serialized and wrapped as one blob via
+  `wrap_external_data()` instead of per-item, to avoid multiplying wrapper overhead across
+  hundreds of items for no real security benefit.
+- Each package constructs its own `SecurityConfig(semantic_enabled=False,
+  llm_screen_enabled=False)` directly rather than calling the library's `load_config()`
+  (which reads a shared `~/.config/prompt-security-utils/config.json` any tool could also
+  write to) -- this keeps wrapping deterministic and scoped to marker-wrapping plus the
+  library's regex `detection_enabled` tier. The semantic tier is left off everywhere:
+  enabling it triggers a `fastembed` transformer model download on first use.
+- Install-weight caveat, independent of `semantic_enabled`: `prompt-security-utils` pulls in
+  `fastembed` and its `onnxruntime` dependency (~68MB installed) as a hard, unconditional
+  dependency with no optional-extras mechanism, so every one of these four packages pays
+  that install weight on every SessionStart venv rebuild regardless of the flag.
+
+What gets wrapped is package-specific -- caller-supplied, freshly-created content is never
+wrapped; pre-existing or externally-sourced content always is. See each package's own
+CLAUDE.md for its field-by-field table.
+
+---
+
 ## PyObjC tools
 
 contacts-tools, apple-eventkit-tools, mail-tools, and imessage-tools depend on
@@ -303,9 +345,7 @@ Linux CI runner cannot resolve them, so they run in a dedicated `test-macos`
 job (`.github/workflows/ci.yml`); every other package runs in the Linux job.
 homeops and lawnops dropped their apple-eventkit-tools dependency (issue #39)
 and moved to the Linux job; `homeops-coordinator`, the only other transitive
-dependent, was retired outright (issue #40). Keep the macOS job's package
-list minimal -- macOS runner minutes are billed at a 10x multiplier versus
-Linux.
+dependent, was retired outright (issue #40). Keep the macOS job's package list minimal (cost rationale in `ci.yml`).
 
 ---
 
