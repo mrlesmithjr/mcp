@@ -20,7 +20,7 @@
 
 REPO        := mrlesmithjr/mcp
 BUMP        ?= patch
-# Packages `install-tools` installs as editable uv tools.
+# Packages `install-tools` installs as frozen uv tools.
 INSTALL_TOOLS ?= ynab-tools
 # Use the SSH key file directly, bypassing any agent (parity with the
 # context-manager release flow; this repo uses an SSH remote).
@@ -52,7 +52,7 @@ help:
 	@echo "  make publish-common"
 	@echo "      Build and publish mrlesmithjr-mcp-common to PyPI (needs UV_PUBLISH_TOKEN)."
 	@echo "  make install-tools [INSTALL_TOOLS=\"<slug> ...\"]"
-	@echo "      Install day-to-day CLIs as editable uv tools (default: $(INSTALL_TOOLS))."
+	@echo "      Install/refresh day-to-day CLIs as frozen uv tools (default: $(INSTALL_TOOLS))."
 	@echo ""
 	@echo "  Tools: $(notdir $(wildcard packages/*))"
 
@@ -148,15 +148,16 @@ check-common-published:
 		fi; \
 	fi
 
-# Install the CLIs used day to day as editable uv tools, so commands like
-# `ynab` run this working tree. These aren't on PyPI, so dotfiles'
-# brewfile-sync leaves them out of the Brewfile; this target is how a machine
-# gets them. Re-run after a tool's dependencies or entry points change.
+# Install the CLIs used day to day as frozen (non-editable) uv tools from this
+# working tree. Frozen on purpose: source edits go live only when this is
+# re-run (see packages/ynab-tools/CLAUDE.md). These aren't on PyPI, so
+# dotfiles' brewfile-sync leaves them out of the Brewfile; this target is how
+# a machine gets them.
 install-tools:
 	@for t in $(INSTALL_TOOLS); do \
 		test -d "packages/$$t" || { echo "ERROR: packages/$$t does not exist"; exit 1; }; \
 		echo "[install-tools] $$t"; \
-		uv tool install --force --editable "packages/$$t" || exit 1; \
+		uv tool install --force "packages/$$t" || exit 1; \
 	done
 
 # Build and publish mcp-common to PyPI. Requires UV_PUBLISH_TOKEN in the env;
