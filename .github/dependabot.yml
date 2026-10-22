@@ -20,13 +20,19 @@ version: 2
 updates:
   # --- npm: ynab-tools dashboard frontend -------------------------------------
   # No target-branch: this entry is what Dependabot security updates use, and
-  # its PRs target main. Every currently-open Dependabot PR in this repo is a
-  # security update for this directory.
+  # its PRs target main. open-pull-requests-limit: 0 turns off *version*
+  # updates from this entry (those go to develop via the next one) without
+  # affecting security updates, which are grouped into one PR per run instead
+  # of one per package.
   - package-ecosystem: npm
     directory: /packages/ynab-tools/ynab_tools/dashboard/frontend
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
+    groups:
+      frontend-security:
+        applies-to: security-updates
+        patterns: ["*"]
     commit-message:
       prefix: chore
       include: scope
@@ -49,7 +55,22 @@ updates:
 
   # --- Python: the uv workspace ----------------------------------------------
   # Root uv.lock is authoritative for every package (see CLAUDE.md), so one
-  # entry covers the whole workspace.
+  # directory covers the whole workspace. Same split as npm: the first entry
+  # (no target-branch) only carries grouped security updates to main; the
+  # second routes routine version bumps to develop.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      python-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    commit-message:
+      prefix: chore
+      include: scope
+
   - package-ecosystem: uv
     directory: /
     target-branch: develop
