@@ -21,10 +21,12 @@ from mcp_common.errors import safe_tool
 
 mcp = build_server("my-tool", instructions="What this server does.")
 
+
 @mcp.tool()
 @safe_tool
 def do_thing(x: str) -> str:
     return json.dumps({"status": "ok", "data": x})
+
 
 def main() -> None:
     run_stdio(mcp)

@@ -230,10 +230,12 @@ daily = aggregate_daily(data)
 level, message = pre_emergent_advisory(daily, config)
 
 from lawnops.db import list_treatments, get_spend_report, add_product, get_reorder_alerts
+
 rows, year = list_treatments(config, year=2025)
 alerts = get_reorder_alerts(config)
 
 from lawnops.irrigation import get_status, run_zone
+
 ctrl, sensors, programs = get_status()
 
 from lawnops.coverage import calculate_coverage
