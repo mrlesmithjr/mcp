@@ -44,6 +44,11 @@ include = ["unifi*"]
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint]
+# Pin ruff's pre-0.17 default rule set: this package's [tool.ruff] table means
+# it does not inherit the root config, and ruff 0.17 widened the defaults.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.mypy]
 python_version = "3.10"
 strict = true
