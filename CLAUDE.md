@@ -3,7 +3,7 @@
 Guidance for Claude Code when working in the `mcp` uv workspace.
 
 **Status**: ACTIVE
-**Last Updated**: 2026-08-07
+**Last Updated**: 2026-10-26
 
 ---
 
@@ -12,6 +12,12 @@ Guidance for Claude Code when working in the `mcp` uv workspace.
 A uv workspace that consolidates all personal MCP servers into a single lockfile,
 shared dev tooling, and a marketplace generator. Each tool lives under `packages/`
 as a subtree-merged member.
+
+ynab-tools is the only remaining plugin. The other 12 tools (apple-eventkit,
+contacts, homeops, imessage, launchd, lawnops, mail, nextdns, obsidian-search,
+sheets, unifi, weather) were unused after the 2026-08-10 tool retirement and were
+removed on 2026-10-26. Each one's last code is preserved at its
+`<slug>-v<version>` release tag; `git show <tag>:packages/<slug>/...` recovers it.
 
 ---
 
@@ -27,7 +33,7 @@ mcp/
 │   └── marketplace.json        # GENERATED Codex marketplace -- do not hand-edit
 ├── packages/
 │   ├── mcp-common/             # Shared library (mrlesmithjr-mcp-common); PyPI-ready
-│   ├── weather-tools/          # mrlesmithjr-mcp-weather-tools
+│   ├── ynab-tools/             # mrlesmithjr-mcp-ynab-tools
 │   │   ├── .claude-plugin/
 │   │   │   └── plugin.json     # GENERATED: Claude plugin metadata (no hooks field)
 │   │   ├── .codex-plugin/
@@ -37,13 +43,8 @@ mcp/
 │   │       ├── hooks.json      # GENERATED: SessionStart hook wiring
 │   │       ├── install_deps.sh # GENERATED: SessionStart venv installer
 │   │       └── run_server.sh   # GENERATED: cold-start launcher
-│   ├── ynab-tools/             # mrlesmithjr-mcp-ynab-tools (same layout)
 │   │                           # ships NO launchagents/: the dashboard is opt-in
 │   │                           # via `ynab dashboard install` (see below)
-│   ├── homeops/, lawnops/      # launchagents/: plist templates (__HOME__) + ops
-│   │                           # scripts, shipped in the plugin and auto-loaded
-│   ├── contacts-tools/         # mrlesmithjr-mcp-contacts-tools (Google People API; ContactsManager/PyObjC retained but unwired)
-│   └── ...                     # 14 packages total; the 13 plugins share this layout
 ├── scripts/
 │   ├── gen_marketplace.py      # Reads packages/*/pyproject.toml, emits per-package files
 │   └── install_launchagents.sh # Manual/dev re-install of all LaunchAgents from the checkout
@@ -80,8 +81,8 @@ The SessionStart hook (`hooks/install_deps.sh`) runs on each session start. It:
    by a prior release (issue #24). On the warm path it is a hash compare and an exec.
 3. Always (every session, cheap and self-healing) symlinks the tool's human-facing
    CLIs -- every console script not ending in `-mcp` -- into `~/.local/bin` so they
-   are on PATH. This is what makes `lawnops`, `homeops`, `ynab` (incl. `configure`),
-   etc. runnable in a terminal.
+   are on PATH. This is what makes `ynab` (incl. `configure`) runnable in a
+   terminal.
 4. On a (re)build, installs any LaunchAgents shipped under the plugin's
    `launchagents/` dir: copies the ops scripts to `~/.local/share/<tool>/`, renders
    `__HOME__` in the plist templates into `~/Library/LaunchAgents/`, and always
@@ -93,13 +94,13 @@ The SessionStart hook (`hooks/install_deps.sh`) runs on each session start. It:
    rebuild: `render.sh` post-processes the rendered plist (e.g. filling in a
    dynamic schedule block from user config), and re-runs whenever a hash of
    `~/.config/<tool>/env` changes -- not only on a dependency bump -- so a
-   user-edited setting (e.g. obsidian-search-tools' reindex cadence) takes
+   user-edited setting (e.g. a reindex cadence) takes
    effect on the next session (issue #60). `render.sh` failure is non-fatal;
    the unload/load below already tolerates a plist it can't parse.
 
-   Only ship a plist here for an *unattended scheduled job* (obsidian-search-tools
-   is the reference example; homeops and lawnops LaunchAgents are maintainer-home-
-   specific and are not shipped from the plugin, issue #37). A persistent
+   No current package ships `launchagents/`; the mechanism is kept for future
+   tools. Only ship a plist here for an *unattended scheduled job* (the removed
+   obsidian-search-tools was the reference example, issue #60). A persistent
    user-facing service must not be plugin-installed: this step runs
    `launchctl load -w` on every rebuild, so it would silently resurrect a
    service the user had deliberately stopped. The ynab dashboard is the
@@ -134,7 +135,7 @@ Code's established manifest and launcher contract unchanged.
 `codex plugin marketplace add` and
 `codex plugin add <slug>@mrlesmithjr-mcp` install cleanly and pass Codex's own
 plugin schema validator. Verified end to end on codex-cli 0.144.6: a live
-`codex exec` session against `weather-tools` and `ynab-tools` recorded a real
+`codex exec` session against `ynab-tools` recorded a real
 `mcp_tool_call` for the installed server, no shell fallback (issue #133).
 
 ### Which install path to use
@@ -190,8 +191,6 @@ uv run python scripts/gen_marketplace.py --check
 
 ```bash
 uv run pytest packages/mcp-common
-uv run pytest packages/weather-tools
-uv run pytest packages/contacts-tools
 uv run pytest packages/ynab-tools   # requires --extra dashboard at sync time
 ```
 
@@ -213,9 +212,9 @@ CI-gated PR. The `Makefile` drives this:
 ```bash
 make init-develop                       # one-time: create + push develop (also runs `make hooks`)
 make hooks                               # one-time per clone: activate the pre-push main guard
-make bump TOOL=unifi-tools              # bump one tool (pyproject + lock + generated files move together)
+make bump TOOL=ynab-tools               # bump one tool (pyproject + lock + generated files move together)
 make check                              # local mirror of CI
-make ship TOOL=unifi-tools              # bump -> commit -> push develop -> release
+make ship TOOL=ynab-tools               # bump -> commit -> push develop -> release
 make release                            # promote current develop to main via CI-gated PR, then tag each plugin
 ```
 
@@ -253,7 +252,7 @@ See `docs/migration.md` for the full runbook. Summary:
 | Shared lib | `mrlesmithjr-mcp-common` | `mcp_common` | (none) |
 | Tool | `mrlesmithjr-mcp-<slug>` | `<pkg>_tools` or `<pkg>` | `<slug>-mcp` |
 
-The tool slug (e.g. `unifi-tools`) is the server name in `.mcp.json`, which is
+The tool slug (e.g. `ynab-tools`) is the server name in `.mcp.json`, which is
 shared unmodified by both Claude and Codex. Because the server ships as a plugin (plugin name == server name == slug), the tool namespace in
 Claude is `mcp__plugin_<slug>_<slug>__<tool>` (not `mcp__<slug>__`). Downstream
 allowlists, workflows, agents, and skills reference that plugin form.
@@ -281,71 +280,9 @@ default. Classify by effect:
 | Touches only local/closed state (no external calls) | `openWorldHint=False` (the `False` is required; the default is true) |
 
 `destructiveHint`/`idempotentHint` are only meaningful when `readOnlyHint=False`, so
-read tools set `readOnlyHint=True` plus `openWorldHint` as appropriate. `launchd-tools`
-is the reference implementation (issue #20): its tools are all closed-world, so the
-shared `_READ_ONLY` constant carries `readOnlyHint=True, openWorldHint=False`. Each
+read tools set `readOnlyHint=True` plus `openWorldHint` as appropriate. Each
 package's test suite asserts the registered tools' annotations via
 `mcp._tool_manager.list_tools()`.
-
----
-
-## Deterministic checks, not `claude -p` (issue #146)
-
-The LaunchAgent-scheduled checks in lawnops and homeops (`com.lawnops.irrigation-check`,
-`com.lawnops.bermuda-greenup`, `com.homeops.utility-anomaly`, `com.homeops.task-escalation`)
-are plain Python decision functions, not `claude -p` calls -- unit-testable, deterministic,
-no Reminders delivery (issue #39, #37). Each command is a read-only report: it prints what
-it found and exits. See lawnops'/homeops' own CLAUDE.md for which function backs which
-command.
-
----
-
-## Prompt injection guarding (`prompt-security-utils`)
-
-mail-tools, apple-eventkit-tools, contacts-tools, and sheets-tools each return externally-
-authored content (email, calendar/reminder data, contacts, spreadsheet cells) into the
-model's context alongside their own write-capable tools, making attacker-controlled content
-in that data an indirect-prompt-injection vector. All four guard against it the same way,
-via the `prompt-security-utils` PyPI library (MIT, `andmarios/prompt-security-utils`):
-
-- `generate_markers()` runs once at module load to produce a session-unique
-  `(_MARKER_START, _MARKER_END)` pair.
-- `security_instructions()` folds those markers into the `FastMCP(instructions=...)` string --
-  the trusted channel the model reads before any untrusted content -- appended after, not
-  replacing, each server's existing tool-usage guidance.
-- A thin per-package wrapper over the library's `wrap_field()` (typically
-  `_wrap_untrusted_field()`) wraps untrusted string fields at the tool-return boundary, just
-  before `json.dumps`. `wrap_field()` returns `None` unchanged for a `None` input, so an
-  absent field stays absent. A field with no fixed shape (a 2D cell matrix, an enrichment
-  source's arbitrary keys) is JSON-serialized and wrapped as one blob via
-  `wrap_external_data()` instead of per-item, to avoid multiplying wrapper overhead across
-  hundreds of items for no real security benefit.
-- Each package constructs its own `SecurityConfig(semantic_enabled=False,
-  llm_screen_enabled=False)` directly rather than calling the library's `load_config()`
-  (which reads a shared `~/.config/prompt-security-utils/config.json` any tool could also
-  write to) -- this keeps wrapping deterministic and scoped to marker-wrapping plus the
-  library's regex `detection_enabled` tier. The semantic tier is left off everywhere:
-  enabling it triggers a `fastembed` transformer model download on first use.
-- Install-weight caveat, independent of `semantic_enabled`: `prompt-security-utils` pulls in
-  `fastembed` and its `onnxruntime` dependency (~68MB installed) as a hard, unconditional
-  dependency with no optional-extras mechanism, so every one of these four packages pays
-  that install weight on every SessionStart venv rebuild regardless of the flag.
-
-What gets wrapped is package-specific -- caller-supplied, freshly-created content is never
-wrapped; pre-existing or externally-sourced content always is. See each package's own
-CLAUDE.md for its field-by-field table.
-
----
-
-## PyObjC tools
-
-contacts-tools, apple-eventkit-tools, mail-tools, and imessage-tools depend on
-PyObjC. These resolve and install fine on macOS without platform markers. A
-Linux CI runner cannot resolve them, so they run in a dedicated `test-macos`
-job (`.github/workflows/ci.yml`); every other package runs in the Linux job.
-homeops and lawnops dropped their apple-eventkit-tools dependency (issue #39)
-and moved to the Linux job; `homeops-coordinator`, the only other transitive
-dependent, was retired outright (issue #40). Keep the macOS job's package list minimal (cost rationale in `ci.yml`).
 
 ---
 
@@ -388,11 +325,6 @@ needs a matching `make publish-common` run before the next release -- this
 is the only step in the release flow that requires a manual, credentialed
 action.
 
-`packages/apple-eventkit-tools` was published the same way while `homeops`,
-`lawnops`, and `homeops-coordinator` depended on it (issue #146). Issues #39
-and #40 dropped all three dependents (homeops/lawnops for read-only reports
-with no Reminders delivery channel; homeops-coordinator retired outright),
-so `apple-eventkit-tools` has zero dependents now and its `make
-publish-apple-eventkit-tools` / `check-apple-eventkit-tools-published`
-release gate was removed. It remains a standalone plugin, just no longer a
-published dependency of anything else in the workspace.
+`mrlesmithjr-mcp-apple-eventkit-tools` also remains on PyPI from when other
+packages depended on it (issue #146); the package itself was removed from this
+repo on 2026-10-26.

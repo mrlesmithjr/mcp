@@ -6,22 +6,10 @@ Every tool lives under `packages/` as a workspace member with a single shared `u
 
 ## Packages
 
-Fourteen tools ship as marketplace plugins. One package supports them and is not a plugin.
+One tool ships as a marketplace plugin. One package supports it and is not a plugin.
 
 | Package | Version | What it does |
 |---------|---------|--------------|
-| `apple-eventkit-tools` | 0.2.4 | Personal calendar via Google Calendar API, Family Calendar and Reminders via native EventKit |
-| `contacts-tools` | 0.2.3 | Contacts read/write via the Google People API |
-| `homeops` | 0.1.27 | Home maintenance operations: tasks, pest, services, HVAC |
-| `imessage-tools` | 0.1.9 | Read iMessage chats and send via AppleScript |
-| `launchd-tools` | 0.1.4 | Read-only health visibility for personal macOS LaunchAgents, plus safe kickstart |
-| `lawnops` | 1.0.51 | Lawn care: weather, irrigation, treatments, products |
-| `mail-tools` | 0.1.35 | Apple Mail read, search, compose across accounts |
-| `nextdns-tools` | 0.1.13 | NextDNS analytics, blocking stats, device activity |
-| `obsidian-search-tools` | 0.2.0 | Hybrid semantic and keyword search over an Obsidian vault |
-| `sheets-tools` | 0.2.3 | Google Sheets read/write via the Sheets API v4, plus spreadsheet discovery and sharing via Drive |
-| `unifi-tools` | 0.1.27 | UniFi network: devices, clients, VLANs, firewall |
-| `weather-tools` | 0.1.6 | Historical weather data via Open-Meteo |
 | `ynab-tools` | 1.0.386 | YNAB budget sync, payee cleanup, financial analysis |
 | `mcp-common` | (library) | Shared helpers: logging, layered config, paths, errors. Not a plugin. |
 
@@ -36,10 +24,10 @@ Each `packages/<tool>/` directory is the plugin source. When you install a plugi
 ```bash
 # Add this marketplace, then install a tool as a plugin
 claude plugin marketplace add mrlesmithjr/mcp
-claude plugin install unifi-tools@mrlesmithjr-mcp
+claude plugin install ynab-tools@mrlesmithjr-mcp
 ```
 
-Tools that need credentials (e.g. `nextdns-tools`, `unifi-tools`, `ynab-tools`) ship a `configure` command or document their config file; see the package README.
+`ynab-tools` needs credentials; run `ynab configure` or see its README for the config file.
 
 Every tool also generates a Codex plugin manifest (`.codex-plugin/plugin.json`) and installs cleanly via `codex plugin marketplace add` / `codex plugin add`. Codex uses an inline, plugin-root-relative MCP launcher (Codex does not expand `${CLAUDE_PLUGIN_ROOT}` in a plugin's stdio argv the way Claude Code does) while Claude Code continues to use its existing `.mcp.json` definition. Verified end to end against a live `codex exec` session (issue #133).
 
@@ -101,7 +89,6 @@ Run tests per package, not in one combined invocation (test files share names ac
 
 ```bash
 uv run pytest packages/mcp-common
-uv run pytest packages/weather-tools
 uv run pytest packages/ynab-tools    # requires: uv sync --all-packages --extra dashboard
 ```
 

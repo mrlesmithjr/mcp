@@ -9,21 +9,12 @@ rather than opening a public issue.
 ## What these tools have access to
 
 This is the most important thing to understand before installing anything here.
-These are personal automation servers, and several of them are deliberately
-wired into sensitive local data:
+These are personal automation servers, deliberately wired into sensitive
+data:
 
 | Tool | Reads / writes |
 |------|----------------|
-| `imessage-tools` | `~/Library/Messages/chat.db` (full iMessage history); sends messages as you |
-| `mail-tools` | Gmail via OAuth: read, send, modify labels |
-| `contacts-tools` | Google Contacts (People API): read and write |
-| `apple-eventkit-tools` | Apple Calendar/Reminders and Google Calendar: read and write |
-| `sheets-tools` | Google Sheets and Drive metadata |
 | `ynab-tools` | Full YNAB budget: balances, transactions, income, net worth |
-| `unifi-tools` | UniFi controller: network topology, clients, firewall rules |
-| `nextdns-tools` | NextDNS profile: DNS query logs, allow/deny lists |
-| `launchd-tools` | Enumerates and controls user LaunchAgents |
-| `obsidian-search-tools` | Indexes an Obsidian vault into a local SQLite DB |
 
 An MCP server runs with your user's privileges. A model driving these tools can
 read anything the tool can read. Install only the plugins you actually want, and
@@ -35,8 +26,6 @@ No credentials ship in this repository, and none belong in it.
 
 - Secrets live in `~/.config/<tool>/config.json`, written `0600` in a `0700`
   directory (`mcp_common.paths`), or in environment variables.
-- Google OAuth tokens live in `~/.config/<tool>/google_tokens.json`; the shared
-  client credentials live in `~/.config/google/credentials.json`.
 - Every `*.example` file in this repo contains placeholders only.
 - `.gitignore` excludes real `config.json`, `*.db`, and `payee_rules.json`.
 
@@ -45,9 +34,6 @@ link above rather than in a public issue.
 
 ## Access controls worth knowing about
 
-- **`imessage-tools` is allowlist-gated.** Every read and send is scoped to
-  handles in `~/.config/imessage-tools/access.json`. Anything else raises
-  `PermissionError`. The allowlist is the security boundary — keep it narrow.
 - **The YNAB dashboard refuses to bind a non-loopback address without a
   password.** Every route serves budget data and HTTP Basic auth is only
   enforced when `DASHBOARD_PASSWORD` is set, so binding `0.0.0.0` without one is

@@ -14,8 +14,7 @@ jobs:
   lint:
     name: Lint and check generated files
     # Pure static analysis + metadata generation - no package needs to be
-    # installed to run these, so this stays on the cheap Linux runner
-    # regardless of which packages contain PyObjC code.
+    # installed to run these.
     runs-on: ubuntu-latest
 
     steps:
@@ -56,21 +55,12 @@ jobs:
       - name: Set up Python
         run: uv python install 3.11
 
-      - name: Sync Linux-safe packages
-        # Every workspace member except the macOS-required ones below (see
-        # test-macos). --extra dashboard so ynab-tools' dashboard deps
-        # (fastapi, uvicorn) are present for its tests.
+      - name: Sync workspace packages
+        # Every workspace member. --extra dashboard so ynab-tools' dashboard
+        # deps (fastapi, uvicorn) are present for its tests.
         run: |
           uv sync --extra dashboard \
             --package mrlesmithjr-mcp-common \
-            --package mrlesmithjr-mcp-homeops \
-            --package mrlesmithjr-mcp-launchd-tools \
-            --package mrlesmithjr-mcp-lawnops \
-            --package mrlesmithjr-mcp-nextdns-tools \
-            --package mrlesmithjr-mcp-obsidian-search-tools \
-            --package mrlesmithjr-mcp-sheets-tools \
-            --package mrlesmithjr-mcp-unifi-tools \
-            --package mrlesmithjr-mcp-weather-tools \
             --package mrlesmithjr-mcp-ynab-tools
 
       - name: Run tests
@@ -83,52 +73,7 @@ jobs:
         # regardless of #96's root cause.
         run: |
           set -e
-          for pkg in mcp-common homeops launchd-tools lawnops \
-                     nextdns-tools obsidian-search-tools sheets-tools \
-                     unifi-tools weather-tools ynab-tools; do
-            echo "::group::pytest packages/$pkg"
-            uv run pytest packages/$pkg -v
-            echo "::endgroup::"
-          done
-
-  test-macos:
-    name: Test (macOS / PyObjC packages)
-    # apple-eventkit-tools, contacts-tools, imessage-tools, and mail-tools all
-    # depend on pyobjc-* (macOS-only wheels). homeops and lawnops dropped
-    # their apple-eventkit-tools dependency (issue #39) and homeops-coordinator
-    # was retired (issue #40), so all three moved to test-linux. Every other
-    # package is plain Python and runs in test-linux instead - keep this job's
-    # package list minimal, since macOS runner minutes are billed at a 10x
-    # multiplier versus Linux.
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
-        with:
-          version: "latest"
-
-      - name: Set up Python
-        run: uv python install 3.11
-
-      - name: Sync macOS-required packages
-        run: |
-          uv sync \
-            --package mrlesmithjr-mcp-apple-eventkit-tools \
-            --package mrlesmithjr-mcp-contacts-tools \
-            --package mrlesmithjr-mcp-imessage-tools \
-            --package mrlesmithjr-mcp-mail-tools
-
-      - name: Run tests
-        # One pytest invocation per package - see the matching comment in
-        # test-linux above (#96: combined multi-package collection silently
-        # drops tests when packages share a test filename).
-        run: |
-          set -e
-          for pkg in apple-eventkit-tools contacts-tools imessage-tools \
-                     mail-tools; do
+          for pkg in mcp-common ynab-tools; do
             echo "::group::pytest packages/$pkg"
             uv run pytest packages/$pkg -v
             echo "::endgroup::"
