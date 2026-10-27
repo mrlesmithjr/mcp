@@ -23,15 +23,31 @@ User-facing reference lives in `docs/`. Update these when code changes affect us
 | `docs/dashboard.md` | Dashboard install, service management, calibration logic |
 | `docs/database.md` | Schema, ERD, table reference, data files |
 
-## After-Code-Change Checklist (MANDATORY)
+## Global Install Policy: Frozen, Not Editable (MANDATORY)
 
-After any session that modifies Python source or frontend (TypeScript/React) files, you MUST reinstall and restart before reporting the work as done. The dashboard LaunchAgent runs the installed snapshot - source edits are invisible to it until reinstalled.
+The `ynab` / `ynab-mcp` binaries on `PATH` (`~/.local/bin`, via `uv tool install .`) are
+a **deliberately frozen snapshot**, not an editable/auto-tracking install. This is the
+one copy that every shell-capable AI surface on this machine reaches through - Terminal,
+Claude Code, Codex, ChatGPT, and Antigravity all shell out to this same binary, none of
+them go through a per-surface registration. Several MCP tools write directly to the live
+YNAB budget (`fund_category`, `add_transaction`, `delete_transaction`,
+`reconcile_account`, etc.), so new code must not go live to all of those surfaces the
+moment it's committed - only when the user has tested it and deliberately promotes it.
+
+**Never install this package with `--editable` for routine work.** Editable mode defeats
+the freeze: source edits become live without the explicit reinstall step below. Editable
+is only for an active local dashboard dev loop the user has explicitly asked for, and even
+then it should be reverted back to a plain install afterward.
+
+**After any session that modifies Python source or frontend (TypeScript/React) files,
+end the session by prompting the user to refresh the frozen install** - do not just do it
+silently, and do not report the work as done without raising it:
 
 **Python-only changes** (no frontend files touched):
 ```bash
 cd packages/ynab-tools
-uv tool install --editable ".[dashboard]"
-ynab dashboard restart   # or uninstall + install if restart fails
+uv tool install ".[dashboard]"
+ynab dashboard restart   # only if the dashboard LaunchAgent is installed; skip otherwise
 ```
 
 **Frontend changes** (any `.tsx`, `.ts`, `.css` under `ynab_tools/dashboard/frontend/src`):
@@ -39,9 +55,13 @@ ynab dashboard restart   # or uninstall + install if restart fails
 cd packages/ynab-tools/ynab_tools/dashboard/frontend
 npm run build
 cd packages/ynab-tools
-uv tool install --editable ".[dashboard]"
-ynab dashboard restart   # or uninstall + install if restart fails
+uv tool install ".[dashboard]"
+ynab dashboard restart   # only if the dashboard LaunchAgent is installed; skip otherwise
 ```
+
+Drop `".[dashboard]"` for `"."` if the dashboard extra isn't in use. Check dashboard
+status first with `ynab dashboard status` - as of 2026-08-11 it is not installed as a
+LaunchAgent, so the restart step is a no-op until that changes.
 
 If `ynab dashboard restart` exits with an I/O error, fall back to:
 ```bash
