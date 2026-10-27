@@ -152,12 +152,15 @@ check-common-published:
 # working tree. Frozen on purpose: source edits go live only when this is
 # re-run (see packages/ynab-tools/CLAUDE.md). These aren't on PyPI, so
 # dotfiles' brewfile-sync leaves them out of the Brewfile; this target is how
-# a machine gets them.
+# a machine gets them. Pinned to .python-version (what tests and CI run on):
+# uv tool install ignores that file and would otherwise take whatever Python
+# Homebrew currently provides, which can change under a running dashboard
+# (packages/ynab-tools/CLAUDE.md, issue #124).
 install-tools:
 	@for t in $(INSTALL_TOOLS); do \
 		test -d "packages/$$t" || { echo "ERROR: packages/$$t does not exist"; exit 1; }; \
 		echo "[install-tools] $$t"; \
-		uv tool install --force "packages/$$t" || exit 1; \
+		uv tool install --force --python "$$(cat .python-version)" "packages/$$t" || exit 1; \
 	done
 
 # Build and publish mcp-common to PyPI. Requires UV_PUBLISH_TOKEN in the env;
