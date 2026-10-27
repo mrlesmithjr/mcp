@@ -13,9 +13,9 @@
 # and by `check`) fails on any drift.
 #
 # Common flows:
-#   make bump TOOL=unifi-tools            # bump one tool's patch version
+#   make bump TOOL=ynab-tools            # bump one tool's patch version
 #   make check                            # local mirror of CI
-#   make ship TOOL=unifi-tools            # bump + commit + push + release
+#   make ship TOOL=ynab-tools            # bump + commit + push + release
 #   make release                          # promote current develop to main
 
 REPO        := mrlesmithjr/mcp
@@ -62,35 +62,18 @@ gen:
 	@uv run python scripts/gen_marketplace.py --check
 
 # Local mirror of .github/workflows/ci.yml so a release never surprises CI.
-# Syncs and tests every package in one pass (this repo's dev machine is
-# macOS, so the PyObjC packages resolve locally too -- CI only splits them
-# onto a separate runner because ubuntu-latest can't). Each package's tests
-# run as its own pytest invocation, not combined, because several packages
-# share the literal filename tests/test_mcp_server.py and combined
-# collection silently drops tests when that happens (#96).
+# Syncs and tests every package in one pass. Each package's tests run as
+# its own pytest invocation, not combined, because packages can share the
+# literal filename tests/test_mcp_server.py and combined collection silently
+# drops tests when that happens (#96).
 check:
 	@uv run python scripts/gen_marketplace.py --check
 	@uv run ruff check packages/
 	@uv run ruff format --check packages/
 	@uv sync --extra dashboard \
 		--package mrlesmithjr-mcp-common \
-		--package mrlesmithjr-mcp-homeops \
-		--package mrlesmithjr-mcp-launchd-tools \
-		--package mrlesmithjr-mcp-lawnops \
-		--package mrlesmithjr-mcp-nextdns-tools \
-		--package mrlesmithjr-mcp-obsidian-search-tools \
-		--package mrlesmithjr-mcp-sheets-tools \
-		--package mrlesmithjr-mcp-unifi-tools \
-		--package mrlesmithjr-mcp-weather-tools \
-		--package mrlesmithjr-mcp-ynab-tools \
-		--package mrlesmithjr-mcp-apple-eventkit-tools \
-		--package mrlesmithjr-mcp-contacts-tools \
-		--package mrlesmithjr-mcp-imessage-tools \
-		--package mrlesmithjr-mcp-mail-tools
-	@for pkg in mcp-common homeops launchd-tools lawnops \
-	            nextdns-tools obsidian-search-tools sheets-tools unifi-tools \
-	            weather-tools ynab-tools apple-eventkit-tools \
-	            contacts-tools imessage-tools mail-tools; do \
+		--package mrlesmithjr-mcp-ynab-tools
+	@for pkg in mcp-common ynab-tools; do \
 		echo "[check] pytest packages/$$pkg"; \
 		uv run pytest packages/$$pkg -q || exit 1; \
 	done

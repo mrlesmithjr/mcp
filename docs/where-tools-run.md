@@ -66,18 +66,8 @@ Open Settings -> Developer -> Local MCP servers -> **Edit Config** (this opens
 not read your shell `PATH` and does not expand `~`:
 
 ```json
-"lawnops": {
-  "command": "/Users/<you>/Projects/Personal/mcp/.venv/bin/lawnops-mcp"
-}
-```
-
-Some tools need environment variables the binary cannot infer. `obsidian-search-tools` needs
-the vault path:
-
-```json
-"obsidian-search-tools": {
-  "command": "/Users/<you>/Projects/Personal/mcp/.venv/bin/obsidian-search-tools-mcp",
-  "env": { "OBSIDIAN_VAULT_PATH": "/Users/<you>/Obsidian/<Vault>" }
+"ynab-tools": {
+  "command": "/Users/<you>/Projects/Personal/mcp/.venv/bin/ynab-mcp"
 }
 ```
 
@@ -111,23 +101,10 @@ package's `[project.scripts]`), or use this table:
 
 | Tool (slug) | Binary |
 |-------------|--------|
-| lawnops | `lawnops-mcp` |
-| weather-tools | `weather-tools-mcp` |
-| obsidian-search-tools | `obsidian-search-tools-mcp` |
 | ynab-tools | `ynab-mcp` |
-| sheets-tools | `sheets-mcp` |
-| nextdns-tools | `nextdns-mcp` |
-| unifi-tools | `unifi-mcp` |
-| apple-eventkit-tools | `ical-mcp` |
-| contacts-tools | `contacts-mcp` |
-| mail-tools | `mail-mcp` |
-| imessage-tools | `imessage-mcp` |
-| homeops | `homeops-mcp` |
-| launchd-tools | `launchd-tools-mcp` |
 
-Note the inconsistency: most drop `-tools` (`ynab-tools` -> `ynab-mcp`), some keep it
-(`weather-tools` -> `weather-tools-mcp`), and `apple-eventkit-tools` is `ical-mcp`. Do not
-guess; verify.
+The binary drops `-tools` (`ynab-tools` -> `ynab-mcp`). For any future tool, do not guess;
+verify.
 
 ## Recipe: one tool, all three surfaces (dev machine)
 

@@ -93,7 +93,7 @@ _PYPI_PREFIX = "mrlesmithjr-mcp-"
 # .agents/plugins/marketplace.json) in two different ecosystems, so the same
 # "mrlesmithjr-mcp" name in both does not create the cross-marketplace
 # overwrite risk described above. The issue's acceptance criteria hardcode
-# `codex plugin add unifi-tools@mrlesmithjr-mcp`, so this name is a hard
+# `codex plugin add <slug>@mrlesmithjr-mcp`, so this name is a hard
 # constraint on the Codex side too.
 _OWNER = {
     "name": "mrlesmithjr-mcp",
@@ -399,9 +399,8 @@ def _find_mcp_script(scripts: dict[str, str]) -> tuple[str, str] | None:
 
     Prefers the script whose entry point ends with 'mcp_server:main'.
     When multiple match, picks the alphabetically first script name so output
-    is deterministic. For tools that expose alias scripts (e.g. apple-eventkit-tools
-    ships apple-eventkit-mcp, ical-mcp, reminders-mcp), the canonical script
-    sorts first alphabetically.
+    is deterministic. For tools that expose alias scripts, the canonical script
+    should sort first alphabetically.
     Returns None when no MCP script is found.
     """
     candidates = [(name, ep) for name, ep in scripts.items() if ep.endswith(_MCP_ENTRY_SUFFIX)]
@@ -423,8 +422,7 @@ def _tool_slug_from_package(pypi_name: str) -> str:
     plugin directories, the MCP server key, and the marketplace entry name.
 
     Examples:
-      mrlesmithjr-mcp-lawnops       -> lawnops
-      mrlesmithjr-mcp-weather-tools -> weather-tools
+      mrlesmithjr-mcp-ynab-tools -> ynab-tools
     """
     if pypi_name.startswith(_PYPI_PREFIX):
         return pypi_name[len(_PYPI_PREFIX) :]
@@ -578,78 +576,6 @@ def _marketplace_entry(tool_slug: str, version: str, description: str) -> dict:
 # default_prompt: <=3 entries, each <=128 chars, authored from each tool's own
 # CLAUDE.md (see _codex_plugin_json() for the enforced length assertion).
 _CODEX_INTERFACE: dict[str, dict] = {
-    "apple-eventkit-tools": {
-        "display_name": "Apple EventKit Tools",
-        "category": "Productivity",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["What's on my agenda today across all calendars?"],
-    },
-    "contacts-tools": {
-        "display_name": "Contacts Tools",
-        "category": "Productivity",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Find duplicate contacts and merge them."],
-    },
-    "homeops": {
-        "display_name": "HomeOps",
-        "category": "Business & Operations",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Give me the home status dashboard: overdue tasks, alerts, spending."],
-    },
-    "imessage-tools": {
-        "display_name": "iMessage Tools",
-        "category": "Communication",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Show my unread messages across all allowed chats."],
-    },
-    "launchd-tools": {
-        "display_name": "LaunchD Tools",
-        "category": "Developer Tools",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Give me a one-line health rollup of my LaunchAgents."],
-    },
-    "lawnops": {
-        "display_name": "LawnOps",
-        "category": "Business & Operations",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["What's the spray advisory for today based on soil temp and weather?"],
-    },
-    "mail-tools": {
-        "display_name": "Mail Tools",
-        "category": "Communication",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Show unread mail counts across all my accounts."],
-    },
-    "nextdns-tools": {
-        "display_name": "NextDNS Tools",
-        "category": "Security",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["What got blocked on my network today?"],
-    },
-    "obsidian-search-tools": {
-        "display_name": "Obsidian Search Tools",
-        "category": "Productivity",
-        "capabilities": ["Interactive", "Read"],
-        "default_prompt": ["Search my Obsidian vault for notes about a topic."],
-    },
-    "sheets-tools": {
-        "display_name": "Sheets Tools",
-        "category": "Productivity",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["List my spreadsheets and show me one's tabs."],
-    },
-    "unifi-tools": {
-        "display_name": "UniFi Tools",
-        "category": "Developer Tools",
-        "capabilities": ["Interactive", "Read", "Write"],
-        "default_prompt": ["Show connected clients and current WAN status."],
-    },
-    "weather-tools": {
-        "display_name": "Weather Tools",
-        "category": "Data & Analytics",
-        "capabilities": ["Interactive", "Read"],
-        "default_prompt": ["How many consecutive days has it rained at my location?"],
-    },
     "ynab-tools": {
         "display_name": "YNAB Tools",
         "category": "Finance",
@@ -750,7 +676,7 @@ def _codex_marketplace(tools: list[dict]) -> dict:
 
     name MUST be exactly _OWNER["name"] (reused verbatim, not a new/different
     string) -- the issue's acceptance criteria hardcode
-    'codex plugin add unifi-tools@mrlesmithjr-mcp'.
+    'codex plugin add <slug>@mrlesmithjr-mcp'.
     """
     return {
         "name": _OWNER["name"],
