@@ -10,7 +10,7 @@ One tool ships as a marketplace plugin. One package supports it and is not a plu
 
 | Package | Version | What it does |
 |---------|---------|--------------|
-| `ynab-tools` | 1.0.386 | YNAB budget sync, payee cleanup, financial analysis |
+| `ynab-tools` | 1.0.387 | YNAB budget sync, payee cleanup, financial analysis |
 | `mcp-common` | (library) | Shared helpers: logging, layered config, paths, errors. Not a plugin. |
 
 Each package has its own README with setup, tools, and usage. `mcp-common` exposes no MCP server and is excluded from the marketplace.
