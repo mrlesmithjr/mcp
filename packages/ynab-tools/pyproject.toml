@@ -39,7 +39,7 @@ dev = [
 ]
 dashboard = [
     "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
+    "uvicorn[standard]>=0.52.0",
 ]
 
 [project.urls]
