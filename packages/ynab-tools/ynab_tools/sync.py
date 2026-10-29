@@ -479,6 +479,99 @@ def backfill_category_group_names(conn: sqlite3.Connection, client: YNABClient) 
     return total_updated, deleted_count
 
 
+def _repair_subtransactions(conn: sqlite3.Connection, live_txns: list[dict], now: str) -> int:
+    """Replace local split lines that differ from YNAB's nested subtransactions.
+
+    The delta plan export sends only the subtransactions that changed, while
+    sync_plan_export clears a transaction's split lines before inserting the delta
+    ones, so the unchanged siblings of an edited split are lost. /transactions nests
+    the full, current subtransaction list on each transaction, so use it to heal.
+
+    Returns the number of transactions whose split lines were replaced.
+    """
+    repaired = 0
+    for t in live_txns:
+        live_subs = [st for st in t.get("subtransactions", []) if not st.get("deleted")]
+        local_sub_ids = {
+            row["id"]
+            for row in conn.execute(
+                "SELECT id FROM subtransactions WHERE transaction_id = ? AND deleted = 0", (t["id"],)
+            ).fetchall()
+        }
+        if local_sub_ids == {st["id"] for st in live_subs}:
+            continue
+        conn.execute("DELETE FROM subtransactions WHERE transaction_id = ?", (t["id"],))
+        for st in live_subs:
+            conn.execute(
+                """INSERT OR REPLACE INTO subtransactions
+                   (id, transaction_id, amount, memo, payee_id, payee_name,
+                    category_id, category_name, transfer_account_id, deleted,
+                    last_synced_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)""",
+                (
+                    st["id"],
+                    t["id"],
+                    milliunits_to_dollars(st.get("amount")),
+                    st.get("memo"),
+                    st.get("payee_id"),
+                    st.get("payee_name"),
+                    st.get("category_id"),
+                    st.get("category_name"),
+                    st.get("transfer_account_id"),
+                    now,
+                ),
+            )
+        repaired += 1
+    return repaired
+
+
+def reconcile_transactions(conn: sqlite3.Connection, client: YNABClient, months_back: int) -> tuple[int, int]:
+    """Reconcile local transactions in the sync window against YNAB's authoritative list.
+
+    YNAB removes some transactions without a deleted=true tombstone in the delta feed
+    (e.g. an imported transaction matched into a manual one), so upsert-only syncing
+    leaves them behind forever as phantom unapproved/duplicate rows. Local rows in the
+    window that YNAB no longer returns are marked deleted, along with their
+    subtransactions. Split lines that differ from YNAB are also repaired (see
+    _repair_subtransactions).
+
+    Returns (transactions_marked_deleted, splits_repaired).
+    """
+    since_date = (datetime.now() - timedelta(days=months_back * 31)).strftime("%Y-%m-%d")
+    live_txns = [t for t in client.get_transactions(since_date=since_date)["transactions"] if not t.get("deleted")]
+    if not live_txns:
+        return 0, 0
+
+    repaired = _repair_subtransactions(conn, live_txns, datetime.now(UTC).isoformat())
+    conn.commit()
+
+    live_ids = {t["id"] for t in live_txns}
+    local_ids = {
+        row["id"]
+        for row in conn.execute("SELECT id FROM transactions WHERE deleted = 0 AND date >= ?", (since_date,)).fetchall()
+    }
+    missing_ids = local_ids - live_ids
+    max_plausible_deletions = max(5, int(len(local_ids) * 0.2))
+
+    # Same partial-response guard as category reconciliation (refs #134).
+    if len(missing_ids) > max_plausible_deletions:
+        skip_msg = (
+            f"WARNING: transaction reconciliation skipped -- {len(missing_ids)} of {len(local_ids)} "
+            f"local transactions since {since_date} are missing from /transactions, which exceeds the "
+            f"{max_plausible_deletions} sanity ceiling. Treating this as a partial/incomplete API "
+            f"response rather than real deletions; nothing was marked deleted this run."
+        )
+        logger.warning(skip_msg)
+        print(skip_msg)
+        return 0, repaired
+
+    for txn_id in missing_ids:
+        conn.execute("UPDATE transactions SET deleted = 1 WHERE id = ?", (txn_id,))
+        conn.execute("UPDATE subtransactions SET deleted = 1 WHERE transaction_id = ?", (txn_id,))
+    conn.commit()
+    return len(missing_ids), repaired
+
+
 def sync_plan_export(conn: sqlite3.Connection, client: YNABClient) -> dict:
     """Sync all data via single plan export call (delta-aware).
 
@@ -839,6 +932,16 @@ def run_sync(months: int = 12, full: bool = False, db_path: Path | None = None) 
             print(msg)
         mm_count = sync_money_movements(conn, client)
         logger.info(f"Money movements: {mm_count}")
+
+    reconciled_txn_count, repaired_split_count = reconcile_transactions(conn, client, months)
+    if reconciled_txn_count:
+        msg = f"{reconciled_txn_count} transactions reconciled as deleted (removed from YNAB)"
+        logger.info(msg)
+        print(msg)
+    if repaired_split_count:
+        msg = f"{repaired_split_count} split transactions repaired (split lines out of date)"
+        logger.info(msg)
+        print(msg)
 
     logger.info(f"Accounts: {account_count}")
     logger.info(f"Budget months: {month_count} ({cat_count} category entries)")

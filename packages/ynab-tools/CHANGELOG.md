@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sync now reconciles transactions against YNAB's authoritative list** — YNAB
+  drops some transactions (e.g. an import matched into a manual entry) without a
+  deleted=true tombstone, so upsert-only syncing kept them forever as phantom
+  unapproved and duplicate rows that inflated `unapproved`, `summary`, `income`,
+  `large`, `recent`, and `trends`. Each sync now fetches `/transactions` for the
+  sync window and marks absent local rows deleted, behind the same
+  partial-response sanity ceiling as category reconciliation (#134).
+- **Edited split transactions no longer lose their unchanged lines** — the delta
+  plan export carries only the subtransactions that changed, but sync cleared all
+  of a transaction's split lines before inserting them, so split-aware reports
+  undercounted. The same reconciliation pass replaces any split whose lines
+  differ from YNAB's nested subtransactions.
+
 ### Security
 
 - **Patched the last four transitive dashboard-frontend advisories** — `js-yaml`
