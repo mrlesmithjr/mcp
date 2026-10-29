@@ -12,7 +12,7 @@
       "description": "YNAB budget data sync, payee management, and financial analysis",
       "name": "ynab-tools",
       "source": "./packages/ynab-tools",
-      "version": "1.0.386"
+      "version": "1.0.387"
     }
   ]
 }

@@ -10,6 +10,7 @@ from ynab_tools.sync import (
     backfill_category_group_names,
     get_server_knowledge,
     milliunits_to_dollars,
+    reconcile_transactions,
     save_server_knowledge,
     sync_accounts,
     sync_plan_export,
@@ -980,4 +981,119 @@ class TestBackfillCategoryGroupNamesReconciliation:
         ).fetchone()
         assert unrelated["category_group_id"] == "grp-bills"
         assert unrelated["name"] == "Rent"
+        conn.close()
+
+
+def _insert_transaction(conn, txn_id: str, date: str, deleted: int = 0) -> None:
+    """Insert a minimal transactions row for reconciliation tests."""
+    conn.execute(
+        "INSERT INTO transactions (id, date, amount, approved, deleted) VALUES (?, ?, ?, ?, ?)",
+        (txn_id, date, -10.0, 0, deleted),
+    )
+    conn.commit()
+
+
+def _make_transactions_client(txn_ids: list[str], subtransactions: dict[str, list[dict]] | None = None) -> MagicMock:
+    client = MagicMock()
+    subtransactions = subtransactions or {}
+    client.get_transactions.return_value = {
+        "transactions": [{"id": i, "subtransactions": subtransactions.get(i, [])} for i in txn_ids],
+        "server_knowledge": 1,
+    }
+    return client
+
+
+class TestReconcileTransactions:
+    """Transactions YNAB drops without a deleted=true tombstone (e.g. an import matched
+    into a manual entry) must be marked deleted locally, not left as phantom rows."""
+
+    def _recent(self, days_ago: int = 1) -> str:
+        from datetime import datetime, timedelta
+
+        return (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+
+    def test_transaction_missing_from_endpoint_is_marked_deleted(self, tmp_path):
+        conn = _setup_test_db(tmp_path)
+        for i in range(10):
+            _insert_transaction(conn, f"txn-{i}", self._recent())
+        conn.execute("INSERT INTO subtransactions (id, transaction_id, amount) VALUES ('sub-9', 'txn-9', -5.0)")
+        conn.commit()
+
+        count, _ = reconcile_transactions(conn, _make_transactions_client([f"txn-{i}" for i in range(9)]), 12)
+
+        assert count == 1
+        assert conn.execute("SELECT deleted FROM transactions WHERE id = 'txn-9'").fetchone()["deleted"] == 1
+        assert conn.execute("SELECT deleted FROM subtransactions WHERE id = 'sub-9'").fetchone()["deleted"] == 1
+        assert conn.execute("SELECT COUNT(*) FROM transactions WHERE deleted = 0").fetchone()[0] == 9
+        conn.close()
+
+    def test_transactions_outside_window_are_untouched(self, tmp_path):
+        conn = _setup_test_db(tmp_path)
+        _insert_transaction(conn, "txn-live", self._recent())
+        _insert_transaction(conn, "txn-old", self._recent(days_ago=800))
+
+        count, _ = reconcile_transactions(conn, _make_transactions_client(["txn-live"]), 12)
+
+        assert count == 0
+        assert conn.execute("SELECT deleted FROM transactions WHERE id = 'txn-old'").fetchone()["deleted"] == 0
+        conn.close()
+
+    def test_empty_response_does_not_wipe_transactions(self, tmp_path):
+        conn = _setup_test_db(tmp_path)
+        _insert_transaction(conn, "txn-1", self._recent())
+
+        assert reconcile_transactions(conn, _make_transactions_client([]), 12) == (0, 0)
+        assert conn.execute("SELECT deleted FROM transactions WHERE id = 'txn-1'").fetchone()["deleted"] == 0
+        conn.close()
+
+    def test_partial_response_missing_too_many_skips_reconciliation(self, tmp_path, capsys):
+        conn = _setup_test_db(tmp_path)
+        for i in range(20):
+            _insert_transaction(conn, f"txn-{i}", self._recent())
+
+        # 10 of 20 missing exceeds the ceiling of max(5, 20 * 0.2) == 5.
+        count, _ = reconcile_transactions(conn, _make_transactions_client([f"txn-{i}" for i in range(10)]), 12)
+
+        assert count == 0
+        assert conn.execute("SELECT COUNT(*) FROM transactions WHERE deleted = 0").fetchone()[0] == 20
+        assert "transaction reconciliation skipped" in capsys.readouterr().out
+        conn.close()
+
+    def test_split_missing_unchanged_siblings_is_repaired(self, tmp_path):
+        """A delta plan export carrying only the edited split line leaves the local
+        split with one line; the full nested list from /transactions restores it."""
+        conn = _setup_test_db(tmp_path)
+        _insert_transaction(conn, "txn-1", self._recent())
+        conn.execute("INSERT INTO subtransactions (id, transaction_id, amount) VALUES ('sub-a', 'txn-1', -4.0)")
+        conn.commit()
+        live_subs = [
+            {"id": "sub-a", "amount": -4000, "category_name": "Groceries", "deleted": False},
+            {"id": "sub-b", "amount": -6000, "category_name": "Household", "deleted": False},
+            {"id": "sub-old", "amount": -1000, "deleted": True},
+        ]
+
+        deleted, repaired = reconcile_transactions(conn, _make_transactions_client(["txn-1"], {"txn-1": live_subs}), 12)
+
+        assert (deleted, repaired) == (0, 1)
+        rows = conn.execute(
+            "SELECT id, amount, category_name FROM subtransactions WHERE transaction_id = 'txn-1' ORDER BY id"
+        ).fetchall()
+        assert [tuple(r) for r in rows] == [("sub-a", -4.0, "Groceries"), ("sub-b", -6.0, "Household")]
+        conn.close()
+
+    def test_matching_split_is_left_alone(self, tmp_path):
+        conn = _setup_test_db(tmp_path)
+        _insert_transaction(conn, "txn-1", self._recent())
+        conn.execute(
+            "INSERT INTO subtransactions (id, transaction_id, amount, last_synced_at) "
+            "VALUES ('sub-a', 'txn-1', -4.0, 'orig')"
+        )
+        conn.commit()
+
+        _, repaired = reconcile_transactions(
+            conn, _make_transactions_client(["txn-1"], {"txn-1": [{"id": "sub-a", "amount": -4000}]}), 12
+        )
+
+        assert repaired == 0
+        assert conn.execute("SELECT last_synced_at FROM subtransactions WHERE id = 'sub-a'").fetchone()[0] == "orig"
         conn.close()
